@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>赵雨萱线 - 视觉小说</title>
+<style>
+/* ========== RESET & BASE ========== */
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Segoe UI','Microsoft YaHei','Hiragino Sans GB',sans-serif;user-select:none;-webkit-user-select:none;}
+
+/* ========== GAME CONTAINER ========== */
+#game-container{position:relative;width:100vw;height:100vh;overflow:hidden;background:#000;}
+
+/* ========== TITLE SCREEN ========== */
+#title-screen{position:absolute;inset:0;z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#1a0a12 0%,#2d1220 30%,#1a0a12 60%,#0d0510 100%);transition:opacity 1.5s ease;}
+#title-screen.hidden{opacity:0;pointer-events:none;}
+.title-bg-pattern{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 30%,rgba(255,105,135,0.08) 0%,transparent 70%);pointer-events:none;}
+.title-sakura{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
+.title-sakura .petal{position:absolute;width:12px;height:12px;background:radial-gradient(ellipse at 30% 30%,#ffb6c1,#ff69b4);border-radius:50% 0 50% 50%;opacity:0.6;animation:petalFall linear infinite;}
+@keyframes petalFall{0%{transform:translateY(-20px) rotate(0deg) translateX(0);opacity:0.7;}50%{transform:translateY(50vh) rotate(180deg) translateX(60px);opacity:0.5;}100%{transform:translateY(105vh) rotate(360deg) translateX(-30px);opacity:0;}}
+.title-logo{position:relative;z-index:2;text-align:center;margin-bottom:60px;}
+.title-logo h1{font-size:3.5em;color:#fff;text-shadow:0 0 30px rgba(255,105,135,0.6),0 0 60px rgba(255,105,135,0.3);letter-spacing:8px;font-weight:300;margin-bottom:10px;}
+.title-logo h1 span{color:#ff69b4;font-weight:600;}
+.title-logo .subtitle{font-size:1.1em;color:rgba(255,182,193,0.7);letter-spacing:12px;font-weight:300;}
+.title-menu{position:relative;z-index:2;display:flex;flex-direction:column;gap:16px;align-items:center;}
+.title-menu button{background:transparent;border:1px solid rgba(255,105,135,0.4);color:rgba(255,255,255,0.85);padding:14px 60px;font-size:1.05em;letter-spacing:4px;cursor:pointer;transition:all 0.4s ease;font-family:inherit;min-width:240px;}
+.title-menu button:hover{background:rgba(255,105,135,0.15);border-color:#ff69b4;color:#fff;text-shadow:0 0 15px rgba(255,105,135,0.5);transform:scale(1.03);}
+
+/* ========== CG LAYER ========== */
+#cg-layer{position:absolute;inset:0;z-index:1;background:#000;display:flex;align-items:center;justify-content:center;}
+#cg-layer img{max-width:100%;max-height:100%;object-fit:contain;transition:opacity 0.8s ease;}
+#cg-layer.fade-out img{opacity:0;}
+#cg-layer.fade-in img{opacity:1;}
+
+/* ========== EFFECT LAYER ========== */
+#effect-layer{position:absolute;inset:0;z-index:5;pointer-events:none;}
+
+/* ========== PARTICLE LAYER (Petals) ========== */
+#particle-layer{position:absolute;inset:0;z-index:3;pointer-events:none;overflow:hidden;}
+.petal-particle{position:absolute;pointer-events:none;opacity:0;}
+.petal-particle svg{width:100%;height:100%;}
+
+/* ========== DIALOG BOX ========== */
+#dialog-box{position:absolute;bottom:0;left:0;right:0;z-index:10;padding:0 20px 20px;transition:transform 0.3s ease;}
+#dialog-box.hidden{transform:translateY(100%);}
+.dialog-inner{max-width:1100px;margin:0 auto;background:rgba(255,240,245,0.82);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,182,193,0.35);border-radius:12px;padding:20px 28px 18px;box-shadow:0 -4px 30px rgba(255,105,135,0.1);position:relative;min-height:140px;}
+.speaker-name{position:absolute;top:-16px;left:24px;background:linear-gradient(135deg,#ff69b4,#ff1493);color:#fff;padding:4px 20px;border-radius:20px;font-size:0.9em;letter-spacing:2px;box-shadow:0 2px 10px rgba(255,20,147,0.3);}
+.speaker-name.narrator{background:linear-gradient(135deg,#888,#666);}
+.dialog-text{color:#2d1220;font-size:1.05em;line-height:1.9;min-height:60px;padding-top:4px;}
+.dialog-text .char{opacity:0;transition:opacity 0.05s ease;}
+.dialog-text .char.visible{opacity:1;}
+.click-indicator{position:absolute;bottom:10px;right:20px;color:#ff69b4;font-size:0.75em;animation:blink 1s ease-in-out infinite;}
+@keyframes blink{0%,100%{opacity:0.3;}50%{opacity:1;}}
+
+/* ========== PROGRESS BAR ========== */
+#progress-bar{position:absolute;top:0;left:0;right:0;z-index:20;height:3px;background:rgba(0,0,0,0.3);}
+#progress-fill{height:100%;background:linear-gradient(90deg,#ff69b4,#ff1493);transition:width 0.5s ease;width:0;}
+#scene-indicator{position:absolute;top:8px;right:16px;z-index:20;color:rgba(255,255,255,0.5);font-size:0.75em;letter-spacing:1px;}
+
+/* ========== CONTROL PANEL ========== */
+#control-panel{position:absolute;top:8px;left:16px;z-index:20;display:flex;gap:8px;opacity:0.3;transition:opacity 0.3s;}
+#control-panel:hover{opacity:1;}
+.ctrl-btn{background:rgba(0,0,0,0.5);border:1px solid rgba(255,105,135,0.3);color:rgba(255,255,255,0.8);padding:5px 12px;font-size:0.75em;cursor:pointer;border-radius:4px;transition:all 0.3s;font-family:inherit;}
+.ctrl-btn:hover{background:rgba(255,105,135,0.2);border-color:#ff69b4;}
+.ctrl-btn.active{background:rgba(255,105,135,0.3);border-color:#ff69b4;color:#fff;}
+
+/* ========== MODE INDICATORS ========== */
+#mode-indicator{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:20;color:#ff69b4;font-size:0.8em;letter-spacing:2px;opacity:0;transition:opacity 0.3s;text-shadow:0 0 10px rgba(255,105,135,0.5);}
+#mode-indicator.show{opacity:1;}
+
+/* ========== SAVE/LOAD SCREEN ========== */
+#save-load-screen{position:absolute;inset:0;z-index:100;display:none;align-items:center;justify-content:center;background:rgba(10,5,8,0.92);backdrop-filter:blur(10px);}
+#save-load-screen.show{display:flex;}
+.sl-panel{background:rgba(40,15,30,0.95);border:1px solid rgba(255,105,135,0.3);border-radius:16px;padding:30px 40px;min-width:500px;max-width:600px;}
+.sl-title{color:#ff69b4;font-size:1.3em;letter-spacing:4px;text-align:center;margin-bottom:24px;}
+.sl-slots{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.sl-slot{background:rgba(255,240,245,0.08);border:1px solid rgba(255,105,135,0.2);border-radius:10px;padding:14px 16px;cursor:pointer;transition:all 0.3s;min-height:80px;}
+.sl-slot:hover{background:rgba(255,105,135,0.12);border-color:#ff69b4;transform:translateY(-2px);}
+.sl-slot .slot-num{color:#ff69b4;font-size:0.85em;margin-bottom:6px;}
+.sl-slot .slot-info{color:rgba(255,255,255,0.6);font-size:0.8em;line-height:1.5;}
+.sl-slot .slot-empty{color:rgba(255,255,255,0.3);font-size:0.8em;font-style:italic;}
+.sl-close{display:block;margin:20px auto 0;background:transparent;border:1px solid rgba(255,105,135,0.3);color:rgba(255,255,255,0.7);padding:8px 40px;cursor:pointer;border-radius:6px;font-size:0.9em;transition:all 0.3s;font-family:inherit;}
+.sl-close:hover{background:rgba(255,105,135,0.15);border-color:#ff69b4;}
+
+/* ========== EFFECTS ========== */
+.effect-flash{position:absolute;inset:0;background:#fff;opacity:0;animation:flash 0.6s ease-out;}
+@keyframes flash{0%{opacity:0.8;}100%{opacity:0;}}
+.effect-shake{animation:shake 0.5s ease-in-out;}
+@keyframes shake{0%,100%{transform:translate(0);}10%,30%,50%,70%,90%{transform:translate(-3px,2px);}20%,40%,60%,80%{transform:translate(3px,-2px);}}
+.effect-sparkle{position:absolute;inset:0;pointer-events:none;}
+.sparkle-dot{position:absolute;width:6px;height:6px;background:#fff;border-radius:50%;box-shadow:0 0 10px #fff,0 0 20px #ff69b4;animation:sparkleAnim 1.5s ease-out forwards;}
+@keyframes sparkleAnim{0%{transform:scale(0);opacity:1;}50%{transform:scale(1);opacity:0.8;}100%{transform:scale(0);opacity:0;}}
+.effect-heart{position:absolute;inset:0;pointer-events:none;}
+.heart-float{position:absolute;font-size:1.5em;color:#ff69b4;animation:heartFloat 2s ease-out forwards;pointer-events:none;}
+@keyframes heartFloat{0%{transform:translateY(0) scale(0.5);opacity:1;}100%{transform:translateY(-100px) scale(1.2);opacity:0;}}
+.effect-vignette{position:absolute;inset:0;box-shadow:inset 0 0 100px rgba(0,0,0,0.7);pointer-events:none;animation:vignetteFade 2s ease-out forwards;}
+@keyframes vignetteFade{0%{opacity:0;}30%{opacity:1;}100%{opacity:0;}}
+.effect-overlay{position:absolute;inset:0;pointer-events:none;transition:background 1s ease;}
+
+/* ========== FULLSCREEN BTN ========== */
+#fullscreen-btn{position:absolute;bottom:20px;right:20px;z-index:20;background:rgba(0,0,0,0.4);border:1px solid rgba(255,105,135,0.3);color:rgba(255,255,255,0.6);padding:6px 14px;font-size:0.75em;cursor:pointer;border-radius:4px;transition:all 0.3s;font-family:inherit;}
+#fullscreen-btn:hover{background:rgba(255,105,135,0.2);border-color:#ff69b4;color:#fff;}
+
+/* ========== RESPONSIVE ========== */
+@media(max-width:768px){
+  .title-logo h1{font-size:2em;letter-spacing:4px;}
+  .title-logo .subtitle{font-size:0.85em;letter-spacing:6px;}
+  .title-menu button{padding:10px 40px;font-size:0.9em;min-width:200px;}
+  .dialog-inner{padding:16px 18px 14px;min-height:120px;}
+  .dialog-text{font-size:0.95em;}
+  .sl-panel{min-width:auto;width:90vw;padding:20px;}
+  .sl-slots{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<div id="game-container">
+  <!-- TITLE SCREEN -->
+  <div id="title-screen">
+    <div class="title-bg-pattern"></div>
+    <div class="title-sakura" id="title-petals"></div>
+    <div class="title-logo">
+      <h1><span>赵雨萱</span>线</h1>
+      <div class="subtitle">~ 樱花树下的约定 ~</div>
+    </div>
+    <div class="title-menu">
+      <button onclick="startGame()">开始游戏</button>
+      <button onclick="showLoadScreen()">读取存档</button>
+    </div>
+  </div>
+
+  <!-- CG LAYER -->
+  <div id="cg-layer">
+    <img id="cg-image" src="" alt="CG">
+  </div>
+
+  <!-- EFFECT LAYER -->
+  <div id="effect-layer"></div>
+
+  <!-- PARTICLE LAYER -->
+  <div id="particle-layer"></div>
+
+  <!-- PROGRESS BAR -->
+  <div id="progress-bar"><div id="progress-fill"></div></div>
+  <div id="scene-indicator"></div>
+
+  <!-- CONTROL PANEL -->
+  <div id="control-panel">
+    <button class="ctrl-btn" onclick="toggleAuto()" id="btn-auto">Auto</button>
+    <button class="ctrl-btn" onclick="toggleSkip()" id="btn-skip">Skip</button>
+    <button class="ctrl-btn" onclick="showSaveScreen()">Save</button>
+    <button class="ctrl-btn" onclick="showLoadScreen()">Load</button>
+    <button class="ctrl-btn" onclick="toggleDialog()" id="btn-hide">Hide</button>
+  </div>
+
+  <!-- MODE INDICATOR -->
+  <div id="mode-indicator"></div>
+
+  <!-- DIALOG BOX -->
+  <div id="dialog-box" class="hidden">
+    <div class="dialog-inner">
+      <div class="speaker-name" id="speaker-name">赵雨萱</div>
+      <div class="dialog-text" id="dialog-text"></div>
+      <div class="click-indicator" id="click-indicator">&#9660;</div>
+    </div>
+  </div>
+
+  <!-- SAVE/LOAD SCREEN -->
+  <div id="save-load-screen">
+    <div class="sl-panel">
+      <div class="sl-title" id="sl-title">存档</div>
+      <div class="sl-slots" id="sl-slots"></div>
+      <button class="sl-close" onclick="closeSaveLoad()">返回</button>
+    </div>
+  </div>
+
+  <!-- FULLSCREEN -->
+  <button id="fullscreen-btn" onclick="toggleFullscreen()">全屏</button>
+</div>
+
+<script>
+// ========== SCENARIO DATA ==========
+const scenario = [
+  // Scene 1: 初遇
+  { cg:'scene_01_first_meeting.jpg', lines:[
+    {speaker:'旁白',text:'四月的风裹着樱花的甜香，穿过校园的林荫道。粉白色的花瓣如细雨般飘落，铺满了通往教学楼的小径。',effect:'fade'},
+    {speaker:'旁白',text:'我低着头匆匆赶路，却在转角处撞上了什么柔软的东西。书本散落一地，空气中弥漫着淡淡的花香。',effect:'none'},
+    {speaker:'赵雨萱',text:'啊......对不起！你没事吧？',effect:'sparkle'},
+    {speaker:'旁白',text:'我抬起头，映入眼帘的是一头如瀑布般倾泻而下的粉色长发，和一双琥珀色的眼眸。那双眼睛里映着漫天飞舞的樱花，温柔得像是能融化整个春天。',effect:'heart'},
+    {speaker:'赵雨萱',text:'嗯？你是......新转来的同学吗？我叫赵雨萱，请多关照哦。',effect:'none'}
+  ]},
+  // Scene 2: 教室
+  { cg:'scene_02_classroom_intro.jpg', lines:[
+    {speaker:'旁白',text:'自从那天在樱花树下相遇后，我才知道赵雨萱是这所学校里最受欢迎的女生。她的课桌旁永远围满了人，笑容像是春天的阳光。',effect:'fade'},
+    {speaker:'同学A',text:'雨萱学姐，放学后要不要一起去卡拉OK？',effect:'none'},
+    {speaker:'赵雨萱',text:'抱歉呢，今天我还有事......啊，是你！',effect:'sparkle'},
+    {speaker:'旁白',text:'她在人群中一眼就看到了我，朝我露出了一个只属于我的微笑。那一刻，周围的喧嚣仿佛都安静了下来。',effect:'heart'}
+  ]},
+  // Scene 3: 走廊帮忙
+  { cg:'scene_03_helping_hand.jpg', lines:[
+    {speaker:'旁白',text:'放学后的走廊空荡荡的，夕阳的余晖透过窗户洒在地板上。我抱着一摞厚厚的参考书，艰难地往图书馆走去。',effect:'fade'},
+    {speaker:'赵雨萱',text:'等一下！你这样会摔倒的......让我帮你吧。',effect:'none'},
+    {speaker:'旁白',text:'她不由分说地从我手中接过一半的书，粉色的长发随着动作轻轻晃动，带着若有若无的洗发水清香。',effect:'none'},
+    {speaker:'赵雨萱',text:'你总是这样一个人扛着呢......以后可以叫我的，我经常来图书馆的。',effect:'sparkle'},
+    {speaker:'旁白',text:'她的声音轻柔得像风，却在我心里留下了不可磨灭的痕迹。',effect:'heart'}
+  ]},
+  // Scene 4: 天台便当
+  { cg:'scene_04_lunch_together.jpg', lines:[
+    {speaker:'旁白',text:'不知从什么时候起，天台成了我们两个人的秘密基地。她总是比我先到，坐在栏杆旁，安静地望着远处的风景。',effect:'fade'},
+    {speaker:'赵雨萱',text:'今天我多做了一个玉子烧......你要尝尝吗？',effect:'none'},
+    {speaker:'主角',text:'......真的可以吗？',effect:'none'},
+    {speaker:'赵雨萱',text:'当然啦，因为......是特意为你做的嘛。',effect:'sparkle'},
+    {speaker:'旁白',text:'她说这话时微微别过脸去，耳尖染上了淡淡的绯红。天空蓝得像宝石，而她的笑容比天空更耀眼。',effect:'heart'}
+  ]},
+  // Scene 5: 雨天共伞
+  { cg:'scene_05_rain_shelter.jpg', lines:[
+    {speaker:'旁白',text:'放学时突然下起了大雨，我没有带伞，只能站在校门口的屋檐下发呆。灰蒙蒙的天空下，雨帘密密地织成了一道屏障。',effect:'fade'},
+    {speaker:'赵雨萱',text:'你也没带伞吗？那......一起走吧？',effect:'none'},
+    {speaker:'旁白',text:'她撑开一把粉色的折叠伞，自然地站到了我身边。伞面不大，为了不让我淋到，她悄悄把伞倾向了我这边。',effect:'none'},
+    {speaker:'赵雨萱',text:'你的肩膀湿了......下次一定要记得带伞哦，不然我会担心的。',effect:'sparkle'},
+    {speaker:'旁白',text:'雨声淅沥，她的侧脸在雨幕中显得格外温柔。那一小方伞下的世界，仿佛与整个世界隔绝开来。',effect:'heart'}
+  ]},
+  // Scene 6: 图书馆学习
+  { cg:'scene_06_library_study.jpg', lines:[
+    {speaker:'旁白',text:'期末考试临近，图书馆里弥漫着紧张的氛围。我坐在靠窗的位置，对着数学题苦思冥想。',effect:'fade'},
+    {speaker:'赵雨萱',text:'这道题用这个公式就好了......你看，把x代入这里......',effect:'none'},
+    {speaker:'旁白',text:'她坐到我旁边，指尖点着课本，认真地讲解起来。淡淡的墨香和她的发香交织在一起，让我的注意力完全无法集中在题目上。',effect:'none'},
+    {speaker:'赵雨萱',text:'你在听吗？脸好红......是不是哪里不舒服？',effect:'sparkle'},
+    {speaker:'主角',text:'不......没什么，继续讲吧。',effect:'none'},
+    {speaker:'旁白',text:'她歪了歪头，似乎察觉到了什么，却没有追问，只是嘴角微微上扬，继续耐心地讲下去。',effect:'heart'}
+  ]},
+  // Scene 7: 运动会
+  { cg:'scene_07_sports_festival.jpg', lines:[
+    {speaker:'旁白',text:'操场上彩旗飘扬，加油声此起彼伏。我站在起跑线上，紧张得手心冒汗。',effect:'fade'},
+    {speaker:'赵雨萱',text:'加油——！你一定可以的！',effect:'sparkle'},
+    {speaker:'旁白',text:'人群中，她挥舞着粉色的应援棒，用尽全力地喊着。那道声音穿过嘈杂的人群，清晰地传入我的耳中。',effect:'none'},
+    {speaker:'旁白',text:'枪声响起的那一刻，我拼命地向前冲。不是因为比赛，而是因为终点有她在等着我。',effect:'heart'},
+    {speaker:'赵雨萱',text:'太棒了！你跑得好快！......来，喝水。',effect:'none'}
+  ]},
+  // Scene 8: 文化祭
+  { cg:'scene_08_cultural_festival.jpg', lines:[
+    {speaker:'旁白',text:'文化祭的走廊上挂满了灯笼和彩带，到处都是欢声笑语。我推开女仆咖啡厅的门，被眼前的景象惊呆了。',effect:'fade'},
+    {speaker:'赵雨萱',text:'欢......欢迎回来，主人。',effect:'sparkle'},
+    {speaker:'旁白',text:'她穿着女仆装，粉色的长发扎成了双马尾，配上蕾丝头饰，可爱得让人移不开视线。她的脸红得像熟透的苹果。',effect:'none'},
+    {speaker:'赵雨萱',text:'不......不要一直盯着我看啦......很害羞的......',effect:'none'},
+    {speaker:'旁白',text:'我端起她递来的咖啡，杯壁上画着一个歪歪扭扭的爱心。那是她偷偷画上去的吧。',effect:'heart'}
+  ]},
+  // Scene 9: 黄昏告白
+  { cg:'scene_09_sunset_confession.jpg', lines:[
+    {speaker:'旁白',text:'文化祭结束后的黄昏，天边被染成了橙红色。我们并肩走在回家的路上，影子被夕阳拉得很长很长。',effect:'fade'},
+    {speaker:'赵雨萱',text:'那个......我有话想对你说。',effect:'none'},
+    {speaker:'旁白',text:'她停下脚步，转过身来。夕阳给她的轮廓镀上了一层金色的光晕，琥珀色的眼眸里倒映着漫天的晚霞。',effect:'none'},
+    {speaker:'赵雨萱',text:'从第一次在樱花树下遇见你开始......我的心里就只有你一个人了。我喜欢你，很喜欢很喜欢。',effect:'sparkle'},
+    {speaker:'赵雨萱',text:'所以......你愿意和我......',effect:'heart'},
+    {speaker:'主角',text:'我也是......从那天起，我就一直......',effect:'none'},
+    {speaker:'旁白',text:'话还没说完，她的眼泪就掉了下来。不是悲伤的泪，而是像樱花一样美丽的、幸福的泪。',effect:'heart'}
+  ]},
+  // Scene 10: 第一次约会
+  { cg:'scene_10_first_date.jpg', lines:[
+    {speaker:'旁白',text:'周末的商业街热闹非凡，我们开始了交往后的第一次约会。她穿了一件淡粉色的连衣裙，在阳光下显得格外好看。',effect:'fade'},
+    {speaker:'赵雨萱',text:'那个......牵着手可以吗？',effect:'sparkle'},
+    {speaker:'旁白',text:'她小心翼翼地伸出手，指尖微微颤抖。我握住她的手，感受到她掌心的温度。',effect:'none'},
+    {speaker:'赵雨萱',text:'好温暖......以后，每天都想这样牵着你的手。',effect:'heart'},
+    {speaker:'旁白',text:'她的笑容比橱窗里任何一件装饰品都要耀眼。这条繁华的商业街，因为她在身边，变得像童话世界一样美好。',effect:'none'}
+  ]},
+  // Scene 11: 游乐园
+  { cg:'scene_11_amusement_park.jpg', lines:[
+    {speaker:'旁白',text:'游乐园里到处都是气球和彩旗，空气中弥漫着棉花糖的甜香。她拉着我的手，像个孩子一样兴奋。',effect:'fade'},
+    {speaker:'赵雨萱',text:'快看快看！那个旋转木马好漂亮！还有那个！',effect:'none'},
+    {speaker:'旁白',text:'平日里温柔端庄的赵雨萱，此刻完全卸下了人气女生的光环，露出了最真实、最可爱的模样。',effect:'none'},
+    {speaker:'赵雨萱',text:'谢谢你今天陪我......和你在一起，感觉什么烦恼都没有了。',effect:'sparkle'},
+    {speaker:'旁白',text:'她靠在我的肩膀上，夕阳将她的侧脸染成了温暖的橘色。这一刻，时间仿佛静止了。',effect:'heart'}
+  ]},
+  // Scene 12: 摩天轮
+  { cg:'scene_12_ferris_wheel.jpg', lines:[
+    {speaker:'旁白',text:'摩天轮缓缓上升，小小的包厢里只有我们两个人。城市的灯火在脚下渐渐铺展开来，像是撒落了一地的星星。',effect:'fade'},
+    {speaker:'赵雨萱',text:'好漂亮......整个城市都在发光呢。',effect:'none'},
+    {speaker:'旁白',text:'她趴在玻璃窗上，眼睛里映着万千灯火。我看着她的侧脸，觉得比任何夜景都要美丽。',effect:'none'},
+    {speaker:'赵雨萱',text:'你知道吗？听说摩天轮到达最高点的时候，许愿就会实现哦。',effect:'sparkle'},
+    {speaker:'赵雨萱',text:'我许的愿望是......希望能永远和你在一起。',effect:'heart'}
+  ]},
+  // Scene 13: 花火大会
+  { cg:'scene_13_fireworks.jpg', lines:[
+    {speaker:'旁白',text:'夏夜的天空被绚烂的烟花点亮，河边挤满了穿着浴衣的人群。她穿着一件印着樱花的浅色浴衣，头发上别着一个小小的发簪。',effect:'fade'},
+    {speaker:'赵雨萱',text:'哇——好漂亮！你看那个，像一朵巨大的花！',effect:'sparkle'},
+    {speaker:'旁白',text:'烟花在夜空中绽放又消散，她的眼睛里闪烁着五彩的光芒。我悄悄握紧了她的手。',effect:'none'},
+    {speaker:'赵雨萱',text:'......你知道吗，烟花虽然短暂，但正因为短暂才更加美丽。就像......和你在一起的每一个瞬间。',effect:'none'},
+    {speaker:'旁白',text:'最后一朵烟花消散在天际，她转过头来，在烟花的余光中轻轻吻了我的脸颊。',effect:'heart'}
+  ]},
+  // Scene 14: 探病
+  { cg:'scene_14_sick_visit.jpg', lines:[
+    {speaker:'旁白',text:'发高烧卧床不起的第三天，门铃突然响了。我拖着沉重的身体打开门，看到她提着保温桶站在门口，满脸担忧。',effect:'fade'},
+    {speaker:'赵雨萱',text:'你果然还在发烧......我煮了粥，快趁热喝吧。',effect:'none'},
+    {speaker:'旁白',text:'她把保温桶放在床头柜上，伸手摸了摸我的额头，眉头紧锁。',effect:'none'},
+    {speaker:'赵雨萱',text:'还是好烫......你真是的，不好好照顾自己，让我很担心你知道吗。',effect:'sparkle'},
+    {speaker:'旁白',text:'她一边说着，一边用湿毛巾帮我擦额头。那双平时总是带着笑意的眼睛里，此刻满是心疼。',effect:'heart'},
+    {speaker:'赵雨萱',text:'快点好起来吧......没有你在身边，我连上课都没精神了。',effect:'none'}
+  ]},
+  // Scene 15: 圣诞夜
+  { cg:'scene_15_christmas_eve.jpg', lines:[
+    {speaker:'旁白',text:'圣诞夜的街道上挂满了彩灯，空气中飘着热红酒的香气。我们在街角的圣诞树下相见，她穿着一件白色的毛呢外套，围着红色的围巾。',effect:'fade'},
+    {speaker:'赵雨萱',text:'圣诞快乐！......给你的礼物。',effect:'sparkle'},
+    {speaker:'旁白',text:'她递给我一个精心包装的盒子，上面系着金色的丝带。打开一看，是一条手工编织的手链，每一颗珠子都是粉色的。',effect:'none'},
+    {speaker:'赵雨萱',text:'每一颗珠子都代表我们在一起的一天......虽然现在还不多，但以后会越来越多的。',effect:'heart'},
+    {speaker:'旁白',text:'路灯下，雪花纷纷扬扬地落下。我把手链戴在手腕上，拉过她的手，十指相扣。',effect:'heart'}
+  ]},
+  // Scene 16: 雪中漫步
+  { cg:'scene_16_snow_walk.jpg', lines:[
+    {speaker:'旁白',text:'入冬后的第一场大雪，整个校园被银白色覆盖。我们走在积雪的小路上，脚下发出咯吱咯吱的声响。',effect:'fade'},
+    {speaker:'赵雨萱',text:'好冷......但是好开心。',effect:'none'},
+    {speaker:'旁白',text:'她伸出双手去接飘落的雪花，粉色的长发上落了薄薄一层白雪，像是给她的发丝镶上了银边。',effect:'none'},
+    {speaker:'赵雨萱',text:'你知道吗，每一片雪花都是独一无二的，就像......你在我心里是独一无二的一样。',effect:'sparkle'},
+    {speaker:'旁白',text:'我解下围巾围在她脖子上，她缩了缩脖子，露出一个幸福的微笑。雪还在下，但我们的世界是温暖的。',effect:'heart'}
+  ]},
+  // Scene 17: 情人节
+  { cg:'scene_17_valentine_chocolate.jpg', lines:[
+    {speaker:'旁白',text:'情人节那天，鞋柜里多了一个粉色的信封。打开一看，里面是一张手写的卡片和一颗心形的巧克力。',effect:'fade'},
+    {speaker:'赵雨萱',text:'那个......是我做的。虽然形状不太好看......',effect:'sparkle'},
+    {speaker:'旁白',text:'放学后，她红着脸站在教室门口。她的手指上还残留着可可粉的痕迹，围裙上沾着巧克力的渍。',effect:'none'},
+    {speaker:'赵雨萱',text:'我试做了好多次才成功的......因为想让你吃到最好吃的巧克力。',effect:'none'},
+    {speaker:'旁白',text:'我把巧克力放进嘴里，浓郁的甜味在舌尖化开。那是我这辈子吃过最好吃的巧克力，因为里面装满了她的心意。',effect:'heart'}
+  ]},
+  // Scene 18: 白色情人节
+  { cg:'scene_18_white_day_return.jpg', lines:[
+    {speaker:'旁白',text:'一个月后的白色情人节，我准备了一份特别的回礼。',effect:'fade'},
+    {speaker:'主角',text:'雨萱，这个给你。',effect:'none'},
+    {speaker:'赵雨萱',text:'好可爱！是......手链和耳钉？',effect:'sparkle'},
+    {speaker:'旁白',text:'她打开盒子，眼睛瞬间亮了起来。粉色的水晶在阳光下折射出细碎的光芒，像是凝固的樱花花瓣。',effect:'none'},
+    {speaker:'赵雨萱',text:'谢谢你......我会一直戴着的，永远永远。',effect:'heart'},
+    {speaker:'旁白',text:'她把耳钉小心翼翼地戴上，然后踮起脚尖，在我唇上留下了一个轻柔的吻。',effect:'heart'}
+  ]},
+  // Scene 19: 星空
+  { cg:'scene_19_star_gazing.jpg', lines:[
+    {speaker:'旁白',text:'暑假的某个夜晚，我们爬上了学校后山的小山坡。远离了城市的灯光，夜空中的星星多得数不清。',effect:'fade'},
+    {speaker:'赵雨萱',text:'好多星星......感觉伸手就能碰到一样。',effect:'none'},
+    {speaker:'旁白',text:'她躺在草地上，眼睛里映着整片银河。夏夜的风带着青草的气息，轻轻拂过她的发丝。',effect:'none'},
+    {speaker:'赵雨萱',text:'如果我也变成一颗星星，你还能找到我吗？',effect:'sparkle'},
+    {speaker:'主角',text:'能。因为你会是最亮的那颗。',effect:'none'},
+    {speaker:'旁白',text:'就在这时，一颗流星划过天际。她闭上眼睛，双手合十，许下了一个只有她自己知道的愿望。',effect:'heart'}
+  ]},
+  // Scene 20: 拉钩约定
+  { cg:'scene_20_promise_ring.jpg', lines:[
+    {speaker:'旁白',text:'又是一个樱花季，我们回到了最初相遇的那棵樱花树下。花瓣如初见时一样纷飞，仿佛时光从未流逝。',effect:'fade'},
+    {speaker:'赵雨萱',text:'还记得吗？一年前的今天，我们就是在这里相遇的。',effect:'none'},
+    {speaker:'旁白',text:'她从口袋里拿出一条细细的粉色丝带，在我和她的手指上各绕了一圈。',effect:'none'},
+    {speaker:'赵雨萱',text:'拉钩上吊，一百年不许变......不管以后发生什么，我们都不要分开，好不好？',effect:'sparkle'},
+    {speaker:'旁白',text:'樱花飘落在她的肩头，她的眼眸里倒映着漫天飞舞的花瓣。我握紧她的手，用力地点了点头。',effect:'heart'}
+  ]},
+  // Scene 21: 每日等待
+  { cg:'scene_21_morning_greeting.jpg', lines:[
+    {speaker:'旁白',text:'从那以后，每天早上校门口都能看到她的身影。她总是比我早到，站在樱花树下，看到我时就会露出灿烂的笑容。',effect:'fade'},
+    {speaker:'赵雨萱',text:'早上好！今天也一起走吧。',effect:'sparkle'},
+    {speaker:'旁白',text:'无论春夏秋冬，无论晴天雨天，她都会在那里等我。那条通往学校的路，因为她的陪伴，成了我每天最期待的路程。',effect:'none'},
+    {speaker:'赵雨萱',text:'和你在一起的每一天，都是特别的一天呢。',effect:'heart'}
+  ]},
+  // Scene 22: 烹饪课
+  { cg:'scene_22_baking_together.jpg', lines:[
+    {speaker:'旁白',text:'烹饪课上，老师让我们两人一组做饼干。我和她自然而然地站在了一起。',effect:'fade'},
+    {speaker:'赵雨萱',text:'面粉要过筛才细腻哦......你看，像这样。',effect:'none'},
+    {speaker:'旁白',text:'她认真地教我每一个步骤，偶尔因为我的笨拙而忍不住笑出声来。不知不觉间，她的鼻尖上沾上了一小团面粉。',effect:'none'},
+    {speaker:'赵雨萱',text:'诶？我脸上有什么吗？',effect:'sparkle'},
+    {speaker:'旁白',text:'我伸手帮她擦掉鼻尖上的面粉，她的脸瞬间变得比烤箱里的饼干还红。',effect:'heart'}
+  ]},
+  // Scene 23: 大头贴
+  { cg:'scene_23_photo_booth.jpg', lines:[
+    {speaker:'旁白',text:'游戏厅里的大头贴机器前，她拉着我的手兴奋地冲了进去。',effect:'fade'},
+    {speaker:'赵雨萱',text:'快快快，选这个背景！还有这个边框！',effect:'none'},
+    {speaker:'旁白',text:'闪光灯亮起的瞬间，她做了一个可爱的剪刀手，而我看着她笑了。照片洗出来后，她在每一张上都画了小小的爱心。',effect:'none'},
+    {speaker:'赵雨萱',text:'这张我要贴在手机壳上......这样就能随时看到你了。',effect:'sparkle'},
+    {speaker:'旁白',text:'她小心翼翼地把照片收好，像是收藏着最珍贵的宝物。',effect:'heart'}
+  ]},
+  // Scene 24: 雨中漫步
+  { cg:'scene_24_rain_umbrella.jpg', lines:[
+    {speaker:'旁白',text:'又是一个雨天，但这次我们都带了伞。不过走到半路，她收起了自己的伞，钻到了我的伞下。',effect:'fade'},
+    {speaker:'赵雨萱',text:'两个人撑一把伞比较浪漫嘛......',effect:'none'},
+    {speaker:'旁白',text:'她挽着我的手臂，我们慢慢地走在雨中。雨滴打在伞面上发出清脆的声响，像是大自然演奏的乐曲。',effect:'none'},
+    {speaker:'赵雨萱',text:'你知道吗......和你在一起，就算是下雨天也会觉得很幸福。',effect:'sparkle'},
+    {speaker:'旁白',text:'雨幕中，她的笑容比任何晴天都要明媚。',effect:'heart'}
+  ]},
+  // Scene 25: 天台谈心
+  { cg:'scene_25_school_roof_talk.jpg', lines:[
+    {speaker:'旁白',text:'黄昏时分的天台，风带着傍晚特有的凉意。她坐在栏杆旁，双腿悬空，望着远处的城市天际线。',effect:'fade'},
+    {speaker:'赵雨萱',text:'有时候我在想......如果当初没有在那个转角撞到你，我们现在会是什么样子呢？',effect:'none'},
+    {speaker:'旁白',text:'她的声音很轻，像是怕惊扰了这份宁静。夕阳将她的侧脸染成了温暖的橘色。',effect:'none'},
+    {speaker:'赵雨萱',text:'不过......不管怎样，我觉得命运一定会让我们相遇的。因为你是我的，我是你的。',effect:'sparkle'},
+    {speaker:'旁白',text:'她转过头来，对我露出了一个温柔的微笑。那一刻，我觉得自己是世界上最幸运的人。',effect:'heart'}
+  ]},
+  // Scene 26: 考前加油
+  { cg:'scene_26_exam_cheer.jpg', lines:[
+    {speaker:'旁白',text:'重要考试的前一天，我坐在教室里焦躁不安。她悄悄走到我身边，往我手里塞了一个小小的御守。',effect:'fade'},
+    {speaker:'赵雨萱',text:'这是我去神社求的......听说很灵验哦。',effect:'sparkle'},
+    {speaker:'旁白',text:'粉色的御守上绣着小小的樱花图案，里面装着她亲手写的祈愿纸条。',effect:'none'},
+    {speaker:'赵雨萱',text:'你一定没问题的。不管结果怎样，你在我心里已经是最棒的了。',effect:'none'},
+    {speaker:'旁白',text:'握着那个温暖的御守，我忽然觉得所有的紧张都消散了。有她在，什么困难都不怕。',effect:'heart'}
+  ]},
+  // Scene 27: 电车夕阳
+  { cg:'scene_27_sunset_train.jpg', lines:[
+    {speaker:'旁白',text:'放学后坐电车回家的路上，车厢里很安静。她靠在窗边，夕阳的光透过车窗，在她脸上投下温暖的光影。',effect:'fade'},
+    {speaker:'赵雨萱',text:'......今天的夕阳好美。',effect:'none'},
+    {speaker:'旁白',text:'她的声音轻得像是呓语，眼睛半闭着，长长的睫毛在夕阳中投下细密的阴影。',effect:'none'},
+    {speaker:'旁白',text:'电车轻轻摇晃，她的头不知不觉靠在了我的肩膀上。呼吸平稳而温柔，像是已经睡着了。',effect:'none'},
+    {speaker:'旁白',text:'我没有动，生怕惊醒她。窗外的风景飞速后退，而我希望这条路永远没有终点。',effect:'heart'}
+  ]},
+  // Scene 28: 花园送花
+  { cg:'scene_28_flower_garden.jpg', lines:[
+    {speaker:'旁白',text:'学校后花园里百花盛开，蝴蝶在花丛间翩翩起舞。她蹲在花丛前，认真地观察着一朵盛开的玫瑰。',effect:'fade'},
+    {speaker:'赵雨萱',text:'你看这朵花，颜色好特别......',effect:'none'},
+    {speaker:'旁白',text:'我悄悄摘下旁边一朵开得最美的粉色玫瑰，递到她面前。',effect:'none'},
+    {speaker:'赵雨萱',text:'诶？给我的吗？......好开心！',effect:'sparkle'},
+    {speaker:'旁白',text:'她接过花，凑到鼻尖闻了闻，然后抬起头，眼睛弯成了月牙。',effect:'none'},
+    {speaker:'赵雨萱',text:'但是......你知道吗，在我心里，再美的花也比不上你送我的这一朵。',effect:'heart'}
+  ]},
+  // Scene 29: 盆踊り
+  { cg:'scene_29_festival_dance.jpg', lines:[
+    {speaker:'旁白',text:'夏日祭的广场上，人们围成圆圈跳着盆踊り。太鼓的声音在夜空中回荡，灯笼的光芒映照着每个人的脸庞。',effect:'fade'},
+    {speaker:'赵雨萱',text:'来跳舞吧！我教你！',effect:'none'},
+    {speaker:'旁白',text:'她拉着我加入跳舞的人群。我笨拙的动作引得她笑个不停，但她一直耐心地带着我。',effect:'none'},
+    {speaker:'赵雨萱',text:'不用想那么多，跟着感觉走就好了......就像和我在一起的时候一样。',effect:'sparkle'},
+    {speaker:'旁白',text:'在太鼓声和笑声中，我们手牵着手，绕着篝火转了一圈又一圈。火光映在她的脸上，那是我见过的最美的画面。',effect:'heart'}
+  ]},
+  // Scene 30: 公园秋千
+  { cg:'scene_30_park_swing.jpg', lines:[
+    {speaker:'旁白',text:'周末的午后，我们在附近的公园里散步。她看到了秋千，眼睛一下子亮了起来。',effect:'fade'},
+    {speaker:'赵雨萱',text:'好久没有荡秋千了！推我好不好？',effect:'none'},
+    {speaker:'旁白',text:'她坐在秋千上，双腿轻轻摆动。我站在身后，轻轻推着她。她越荡越高，笑声像银铃一样清脆。',effect:'none'},
+    {speaker:'赵雨萱',text:'再高一点！再高一点！......啊，好像回到了小时候。',effect:'sparkle'},
+    {speaker:'旁白',text:'秋千渐渐慢下来，她回过头来看着我，逆光中她的笑容纯净得像一幅画。',effect:'heart'}
+  ]},
+  // Scene 31: 毕业典礼
+  { cg:'scene_31_graduation_day.jpg', lines:[
+    {speaker:'旁白',text:'三年转瞬即逝，毕业典礼的礼堂里弥漫着离别的感伤。樱花又开始飘落了，仿佛在为我们的青春送行。',effect:'fade'},
+    {speaker:'赵雨萱',text:'......真的要毕业了呢。',effect:'none'},
+    {speaker:'旁白',text:'她穿着制服，站在校门口，眼眶微微泛红。三年的回忆像走马灯一样在脑海中闪过。',effect:'none'},
+    {speaker:'赵雨萱',text:'谢谢你出现在我的生命里......如果没有你，我的高中生活一定不会这么幸福。',effect:'sparkle'},
+    {speaker:'旁白',text:'我拉过她的手，在她耳边轻声说：这不是结束，是新的开始。',effect:'heart'}
+  ]},
+  // Scene 32: 第二颗纽扣
+  { cg:'scene_32_second_button.jpg', lines:[
+    {speaker:'旁白',text:'毕业典礼的传统——女生向喜欢的男生要第二颗纽扣。她站在我面前，脸红得像熟透的苹果。',effect:'fade'},
+    {speaker:'赵雨萱',text:'那个......你的第二颗纽扣......可以给我吗？',effect:'none'},
+    {speaker:'旁白',text:'她低着头，声音小得几乎听不见。我毫不犹豫地解下纽扣，放在她的手心里。',effect:'none'},
+    {speaker:'赵雨萱',text:'我会好好保管的......这是我最珍贵的宝物。',effect:'sparkle'},
+    {speaker:'旁白',text:'她把纽扣紧紧握在手心，抬起头来，眼中含着泪光，却笑得比任何时候都灿烂。',effect:'heart'}
+  ]},
+  // Scene 33: 樱花树下约定
+  { cg:'scene_33_future_promise.jpg', lines:[
+    {speaker:'旁白',text:'毕业后的第一个春天，我们又回到了那棵樱花树下。花瓣纷飞如雪，和三年前初遇时一模一样。',effect:'fade'},
+    {speaker:'赵雨萱',text:'我们约好了的......要一直在一起。',effect:'none'},
+    {speaker:'旁白',text:'她从口袋里拿出一对情侣戒指，银色的环上镶嵌着小小的粉色宝石。',effect:'none'},
+    {speaker:'赵雨萱',text:'这不是求婚啦......只是......一个约定。约定我们未来的每一天，都有彼此。',effect:'sparkle'},
+    {speaker:'旁白',text:'樱花飘落在她的发间，她把戒指戴在我的无名指上，我把另一枚戴在她的手上。风吹过，花瓣飞舞，像是整个世界都在为我们祝福。',effect:'heart'}
+  ]},
+  // Scene 34: 大学
+  { cg:'scene_34_university_campus.jpg', lines:[
+    {speaker:'旁白',text:'大学的校园比高中大了很多，但我们的距离却从未改变。她考上了同一所大学，说这样就能一直看着我。',effect:'fade'},
+    {speaker:'赵雨萱',text:'大学生活......感觉好新鲜呢！',effect:'none'},
+    {speaker:'旁白',text:'她背着书包走在林荫道上，粉色的长发在微风中飘扬。周围的新生纷纷侧目，但她只看着我一个人。',effect:'none'},
+    {speaker:'赵雨萱',text:'不管在哪里，只要你在身边，哪里都是最好的地方。',effect:'sparkle'},
+    {speaker:'旁白',text:'新的环境，新的开始，但不变的，是我们紧握的手和彼此的心。',effect:'heart'}
+  ]},
+  // Scene 35: 咖啡厅约会
+  { cg:'scene_35_cafe_date.jpg', lines:[
+    {speaker:'旁白',text:'大学城附近有一家安静的咖啡厅，成了我们经常约会的地方。午后的阳光透过落地窗洒在桌面上。',effect:'fade'},
+    {speaker:'赵雨萱',text:'这家的拿铁拉花好漂亮......你看，是一朵樱花呢。',effect:'none'},
+    {speaker:'旁白',text:'她托着腮，看着杯子上的拉花发呆。阳光给她的侧脸镀上了一层柔和的光。',effect:'none'},
+    {speaker:'赵雨萱',text:'有时候觉得......像做梦一样。从高中到现在，一直和你在一起。',effect:'sparkle'},
+    {speaker:'旁白',text:'她抬起头，琥珀色的眼眸里映着午后的阳光和我的倒影。',effect:'none'},
+    {speaker:'赵雨萱',text:'如果是梦的话，请永远不要让我醒来。',effect:'heart'}
+  ]},
+  // Scene 36: 生日惊喜
+  { cg:'scene_36_birthday_surprise.jpg', lines:[
+    {speaker:'旁白',text:'我的生日那天，她说要给我一个惊喜。推开家门的那一刻，我被眼前的景象惊呆了。',effect:'fade'},
+    {speaker:'赵雨萱',text:'生日快乐！',effect:'sparkle'},
+    {speaker:'旁白',text:'房间里挂满了气球和彩带，桌上摆着一个精致的蛋糕，上面用粉色奶油写着"永远在一起"。',effect:'none'},
+    {speaker:'赵雨萱',text:'蛋糕是我亲手做的......虽然可能不太好看，但味道应该不错！',effect:'none'},
+    {speaker:'旁白',text:'她点燃蜡烛，火光映在她的脸上，温暖而幸福。我许了一个愿，然后和她一起吹灭了蜡烛。',effect:'heart'},
+    {speaker:'赵雨萱',text:'你许了什么愿望？......不对，说出来就不灵了。不过，我希望你的愿望里有我。',effect:'heart'}
+  ]},
+  // Scene 37: 海边日落
+  { cg:'scene_37_sunset_beach.jpg', lines:[
+    {speaker:'旁白',text:'暑假，我们去了海边。金色的沙滩上留下了我们并肩行走的脚印，海浪一次次冲上来，又退回去。',effect:'fade'},
+    {speaker:'赵雨萱',text:'好宽广......大海真的好美。',effect:'none'},
+    {speaker:'旁白',text:'夕阳将海面染成了金红色，她的裙摆在海风中轻轻飘动。她光着脚踩在沙滩上，像个精灵。',effect:'none'},
+    {speaker:'赵雨萱',text:'如果时间能停在这一刻就好了......海风、夕阳、还有你。',effect:'sparkle'},
+    {speaker:'旁白',text:'我握住她的手，面向大海。夕阳在我们身后缓缓落下，而我们的故事，才刚刚开始。',effect:'heart'}
+  ]},
+  // Scene 38: 求婚
+  { cg:'scene_38_proposal.jpg', lines:[
+    {speaker:'旁白',text:'又是一个樱花季。我带她回到了最初相遇的那棵樱花树下，一切都安排好了。',effect:'fade'},
+    {speaker:'主角',text:'雨萱，从高中到现在，谢谢你一直陪在我身边。',effect:'none'},
+    {speaker:'旁白',text:'我单膝跪下，从口袋里拿出一个小小的丝绒盒子。打开盒子，一枚钻戒在阳光下闪闪发光。',effect:'sparkle'},
+    {speaker:'主角',text:'赵雨萱......你愿意嫁给我吗？',effect:'none'},
+    {speaker:'赵雨萱',text:'......笨蛋。当然愿意啊。',effect:'heart'},
+    {speaker:'旁白',text:'她的眼泪夺眶而出，却笑得比任何时候都灿烂。樱花如雨般飘落，像是整个世界都在为我们庆祝。',effect:'heart'}
+  ]},
+  // Scene 39: 婚礼准备
+  { cg:'scene_39_wedding_preparation.jpg', lines:[
+    {speaker:'旁白',text:'婚礼前一天的化妆间里，她穿着洁白的婚纱，对着镜子紧张地整理着。',effect:'fade'},
+    {speaker:'赵雨萱',text:'......你说，我好看吗？',effect:'none'},
+    {speaker:'旁白',text:'她转过身来，婚纱的裙摆像云朵一样铺展开来。她的眼眶微微泛红，但笑容无比幸福。',effect:'none'},
+    {speaker:'赵雨萱',text:'从明天开始......就要叫你老公了呢。',effect:'sparkle'},
+    {speaker:'旁白',text:'她说完这句话，自己先红了脸。我走上前，轻轻拥住了她。',effect:'heart'},
+    {speaker:'赵雨萱',text:'谢谢你......选择了我。',effect:'heart'}
+  ]},
+  // Scene 40: 婚礼
+  { cg:'scene_40_wedding_chapel.jpg', lines:[
+    {speaker:'旁白',text:'教堂的钟声响起，阳光透过彩色的玻璃窗洒在红毯上。她挽着父亲的手臂，缓缓向我走来。',effect:'fade'},
+    {speaker:'旁白',text:'洁白的婚纱衬得她的粉色长发更加柔美，琥珀色的眼眸里盈满了幸福的泪水。',effect:'none'},
+    {speaker:'赵雨萱',text:'我愿意。',effect:'sparkle'},
+    {speaker:'主角',text:'我愿意。',effect:'none'},
+    {speaker:'旁白',text:'交换戒指的那一刻，教堂里响起了掌声。我轻轻掀起她的面纱，在她的唇上印下了一个承诺。',effect:'heart'},
+    {speaker:'赵雨萱',text:'......从今以后，请多多关照了，我的丈夫。',effect:'heart'},
+    {speaker:'旁白',text:'教堂外，樱花如初见时一样纷飞。从樱花树下的偶然相遇，到此刻的永恒誓言——我们的故事，才刚刚开始最美的篇章。',effect:'heart'},
+    {speaker:'旁白',text:'—— 完 ——',effect:'fade'}
+  ]}
+];
+
+// ========== GAME STATE ==========
+let currentScene = 0;
+let currentLine = 0;
+let isTyping = false;
+let typewriterTimer = null;
+let autoMode = false;
+let skipMode = false;
+let autoTimer = null;
+let dialogVisible = true;
+let gameStarted = false;
+
+// ========== DOM ELEMENTS ==========
+const titleScreen = document.getElementById('title-screen');
+const cgLayer = document.getElementById('cg-layer');
+const cgImage = document.getElementById('cg-image');
+const effectLayer = document.getElementById('effect-layer');
+const particleLayer = document.getElementById('particle-layer');
+const dialogBox = document.getElementById('dialog-box');
+const speakerName = document.getElementById('speaker-name');
+const dialogText = document.getElementById('dialog-text');
+const clickIndicator = document.getElementById('click-indicator');
+const progressFill = document.getElementById('progress-fill');
+const sceneIndicator = document.getElementById('scene-indicator');
+const modeIndicator = document.getElementById('mode-indicator');
+const saveLoadScreen = document.getElementById('save-load-screen');
+const slTitle = document.getElementById('sl-title');
+const slSlots = document.getElementById('sl-slots');
+
+// ========== TITLE SCREEN PETALS ==========
+(function initTitlePetals(){
+  const container = document.getElementById('title-petals');
+  for(let i=0;i<20;i++){
+    const p = document.createElement('div');
+    p.className='petal';
+    p.style.left = Math.random()*100+'%';
+    p.style.animationDuration = (4+Math.random()*6)+'s';
+    p.style.animationDelay = Math.random()*8+'s';
+    p.style.width = (8+Math.random()*10)+'px';
+    p.style.height = p.style.width;
+    p.style.opacity = 0.3+Math.random()*0.4;
+    container.appendChild(p);
+  }
+})();
+
+// ========== START GAME ==========
+function startGame(){
+  titleScreen.classList.add('hidden');
+  setTimeout(()=>{
+    titleScreen.style.display='none';
+    gameStarted=true;
+    loadScene(0);
+    initPetals();
+  },1500);
+}
+
+// ========== LOAD SCENE ==========
+function loadScene(idx){
+  if(idx>=scenario.length){
+    showEnding();
+    return;
+  }
+  currentScene=idx;
+  currentLine=0;
+  const sc=scenario[idx];
+
+  // Update progress
+  const totalLines = scenario.reduce((a,s)=>a+s.lines.length,0);
+  let doneLines=0;
+  for(let i=0;i<idx;i++) doneLines+=scenario[i].lines.length;
+  const pct = (doneLines/totalLines)*100;
+  progressFill.style.width = pct+'%';
+  sceneIndicator.textContent = (idx+1)+' / '+scenario.length;
+
+  // Load CG
+  const imgPath = sc.cg;
+  cgImage.style.opacity='0';
+  cgImage.src = imgPath;
+  cgImage.onload = ()=>{
+    cgImage.style.opacity='1';
+  };
+
+  // Show dialog
+  if(!dialogVisible) toggleDialog();
+
+  // Play first line
+  playLine(0);
+}
+
+// ========== PLAY LINE ==========
+function playLine(lineIdx){
+  const sc=scenario[currentScene];
+  if(lineIdx>=sc.lines.length){
+    // Scene complete, advance to next
+    if(autoMode||skipMode){
+      advanceScene();
+    }
+    return;
+  }
+  currentLine=lineIdx;
+  const line=sc.lines[lineIdx];
+
+  // Speaker
+  if(line.speaker==='旁白'){
+    speakerName.textContent='旁白';
+    speakerName.className='speaker-name narrator';
+  } else {
+    speakerName.textContent=line.speaker;
+    speakerName.className='speaker-name';
+  }
+
+  // Effect
+  playEffect(line.effect);
+
+  // Typewriter
+  typeText(line.text);
+}
+
+// ========== TYPEWRITER ==========
+function typeText(text){
+  if(typewriterTimer) clearTimeout(typewriterTimer);
+  isTyping=true;
+  clickIndicator.style.display='none';
+
+  dialogText.innerHTML='';
+  const chars=text.split('');
+  let i=0;
+
+  function typeNext(){
+    if(i<chars.length){
+      const span=document.createElement('span');
+      span.className='char visible';
+      span.textContent=chars[i];
+      dialogText.appendChild(span);
+      i++;
+      const delay = skipMode ? 5 : (chars[i-1]==='。'||chars[i-1]==='，'||chars[i-1]==='！'||chars[i-1]==='？'||chars[i-1]==='……'||chars[i-1]==='——' ? 80 : 35);
+      typewriterTimer=setTimeout(typeNext, delay);
+    } else {
+      isTyping=false;
+      clickIndicator.style.display='block';
+      if(autoMode){
+        autoTimer=setTimeout(()=>{
+          advanceLine();
+        },2500);
+      } else if(skipMode){
+        autoTimer=setTimeout(()=>{
+          advanceLine();
+        },100);
+      }
+    }
+  }
+  typeNext();
+}
+
+function completeText(text){
+  if(typewriterTimer) clearTimeout(typewriterTimer);
+  isTyping=false;
+  dialogText.innerHTML='';
+  for(const ch of text){
+    const span=document.createElement('span');
+    span.className='char visible';
+    span.textContent=ch;
+    dialogText.appendChild(span);
+  }
+  clickIndicator.style.display='block';
+}
+
+// ========== ADVANCE ==========
+function advanceLine(){
+  if(!gameStarted) return;
+  if(autoTimer){clearTimeout(autoTimer);autoTimer=null;}
+
+  const sc=scenario[currentScene];
+  const line=sc.lines[currentLine];
+
+  if(isTyping){
+    completeText(line.text);
+    if(autoMode){
+      autoTimer=setTimeout(()=>advanceLine(),2500);
+    } else if(skipMode){
+      autoTimer=setTimeout(()=>advanceLine(),100);
+    }
+    return;
+  }
+
+  if(currentLine+1<sc.lines.length){
+    playLine(currentLine+1);
+  } else {
+    advanceScene();
+  }
+}
+
+function advanceScene(){
+  if(autoTimer){clearTimeout(autoTimer);autoTimer=null;}
+  if(currentScene+1<scenario.length){
+    loadScene(currentScene+1);
+  } else {
+    showEnding();
+  }
+}
+
+// ========== EFFECTS ==========
+function playEffect(type){
+  effectLayer.innerHTML='';
+  switch(type){
+    case 'fade':
+      cgLayer.classList.add('fade-out');
+      setTimeout(()=>cgLayer.classList.remove('fade-out'),800);
+      break;
+    case 'shake':
+      cgLayer.classList.add('effect-shake');
+      setTimeout(()=>cgLayer.classList.remove('effect-shake'),500);
+      break;
+    case 'sparkle':
+      createSparkles();
+      break;
+    case 'heart':
+      createHearts();
+      break;
+    case 'flash':
+      const fl=document.createElement('div');
+      fl.className='effect-flash';
+      effectLayer.appendChild(fl);
+      setTimeout(()=>fl.remove(),600);
+      break;
+  }
+}
+
+function createSparkles(){
+  const container=document.createElement('div');
+  container.className='effect-sparkle';
+  for(let i=0;i<12;i++){
+    const dot=document.createElement('div');
+    dot.className='sparkle-dot';
+    dot.style.left=(10+Math.random()*80)+'%';
+    dot.style.top=(10+Math.random()*80)+'%';
+    dot.style.animationDelay=(Math.random()*0.8)+'s';
+    dot.style.width=(4+Math.random()*6)+'px';
+    dot.style.height=dot.style.width;
+    container.appendChild(dot);
+  }
+  effectLayer.appendChild(container);
+  setTimeout(()=>container.remove(),2000);
+}
+
+function createHearts(){
+  const container=document.createElement('div');
+  container.className='effect-heart';
+  for(let i=0;i<6;i++){
+    const h=document.createElement('div');
+    h.className='heart-float';
+    h.innerHTML='&#10084;';
+    h.style.left=(20+Math.random()*60)+'%';
+    h.style.bottom=(10+Math.random()*30)+'%';
+    h.style.animationDelay=(Math.random()*0.8)+'s';
+    h.style.fontSize=(1+Math.random()*1.5)+'em';
+    container.appendChild(h);
+  }
+  effectLayer.appendChild(container);
+  setTimeout(()=>container.remove(),2500);
+}
+
+// ========== PETAL PARTICLES ==========
+let petalAnimFrame;
+function initPetals(){
+  const petals=[];
+  const maxPetals=15;
+
+  function createPetal(){
+    return {
+      x:Math.random()*window.innerWidth,
+      y:-20-Math.random()*100,
+      size:8+Math.random()*12,
+      speedY:0.5+Math.random()*1.5,
+      speedX:-0.5+Math.random()*1,
+      rotation:Math.random()*360,
+      rotSpeed:-1+Math.random()*2,
+      opacity:0.3+Math.random()*0.5,
+      wobble:Math.random()*Math.PI*2,
+      wobbleSpeed:0.02+Math.random()*0.03
+    };
+  }
+
+  for(let i=0;i<maxPetals;i++){
+    const p=createPetal();
+    p.y=Math.random()*window.innerHeight;
+    petals.push(p);
+  }
+
+  function animate(){
+    particleLayer.innerHTML='';
+    for(const p of petals){
+      p.y+=p.speedY;
+      p.wobble+=p.wobbleSpeed;
+      p.x+=p.speedX+Math.sin(p.wobble)*0.5;
+      p.rotation+=p.rotSpeed;
+
+      if(p.y>window.innerHeight+20){
+        Object.assign(p,createPetal());
+      }
+
+      const el=document.createElement('div');
+      el.style.cssText=`
+        position:absolute;
+        left:${p.x}px;
+        top:${p.y}px;
+        width:${p.size}px;
+        height:${p.size}px;
+        background:radial-gradient(ellipse at 30% 30%,#ffb6c1,#ff69b4);
+        border-radius:50% 0 50% 50%;
+        opacity:${p.opacity};
+        transform:rotate(${p.rotation}deg);
+        pointer-events:none;
+      `;
+      particleLayer.appendChild(el);
+    }
+    petalAnimFrame=requestAnimationFrame(animate);
+  }
+  animate();
+}
+
+// ========== AUTO / SKIP ==========
+function toggleAuto(){
+  autoMode=!autoMode;
+  if(autoMode) skipMode=false;
+  document.getElementById('btn-auto').classList.toggle('active',autoMode);
+  document.getElementById('btn-skip').classList.toggle('active',skipMode);
+  showModeIndicator(autoMode?'AUTO':'');
+  if(autoMode && !isTyping){
+    autoTimer=setTimeout(()=>advanceLine(),2500);
+  }
+}
+
+function toggleSkip(){
+  skipMode=!skipMode;
+  if(skipMode) autoMode=false;
+  document.getElementById('btn-skip').classList.toggle('active',skipMode);
+  document.getElementById('btn-auto').classList.toggle('active',autoMode);
+  showModeIndicator(skipMode?'SKIP':'');
+  if(skipMode && !isTyping){
+    autoTimer=setTimeout(()=>advanceLine(),100);
+  }
+}
+
+function showModeIndicator(text){
+  modeIndicator.textContent=text;
+  modeIndicator.classList.toggle('show',!!text);
+  if(text) setTimeout(()=>modeIndicator.classList.remove('show'),1500);
+}
+
+// ========== DIALOG TOGGLE ==========
+function toggleDialog(){
+  dialogVisible=!dialogVisible;
+  dialogBox.classList.toggle('hidden',!dialogVisible);
+  document.getElementById('btn-hide').textContent=dialogVisible?'Hide':'Show';
+}
+
+// ========== SAVE/LOAD ==========
+function showSaveScreen(){
+  openSaveLoad('save');
+}
+function showLoadScreen(){
+  openSaveLoad('load');
+}
+
+function openSaveLoad(mode){
+  slTitle.textContent=mode==='save'?'存档':'读档';
+  slSlots.innerHTML='';
+  for(let i=1;i<=6;i++){
+    const slot=document.createElement('div');
+    slot.className='sl-slot';
+    const data=getSaveData(i);
+    if(data){
+      slot.innerHTML=`
+        <div class="slot-num">存档位 ${i}</div>
+        <div class="slot-info">
+          场景 ${data.scene+1}：${scenario[data.scene].cg.replace(/_/g,' ').replace('.jpg','')}<br>
+          ${data.date}
+        </div>
+      `;
+    } else {
+      slot.innerHTML=`
+        <div class="slot-num">存档位 ${i}</div>
+        <div class="slot-empty">空</div>
+      `;
+    }
+    slot.onclick=()=>{
+      if(mode==='save'){
+        saveGame(i);
+        closeSaveLoad();
+      } else {
+        if(data){
+          loadGame(i);
+          closeSaveLoad();
+        }
+      }
+    };
+    slSlots.appendChild(slot);
+  }
+  saveLoadScreen.classList.add('show');
+}
+
+function closeSaveLoad(){
+  saveLoadScreen.classList.remove('show');
+}
+
+function saveGame(slot){
+  const data={
+    scene:currentScene,
+    line:currentLine,
+    date:new Date().toLocaleString('zh-CN')
+  };
+  localStorage.setItem('vn_save_'+slot,JSON.stringify(data));
+  showModeIndicator('已保存');
+}
+
+function loadGame(slot){
+  const raw=localStorage.getItem('vn_save_'+slot);
+  if(!raw) return;
+  const data=JSON.parse(raw);
+  currentScene=data.scene;
+  currentLine=data.line;
+  if(!gameStarted){
+    titleScreen.classList.add('hidden');
+    setTimeout(()=>{
+      titleScreen.style.display='none';
+      gameStarted=true;
+      initPetals();
+    },100);
+  }
+  loadScene(currentScene);
+  // Jump to correct line
+  const sc=scenario[currentScene];
+  // We need to play from the loaded line
+  currentLine=data.line;
+  const line=sc.lines[currentLine];
+  if(line.speaker==='旁白'){
+    speakerName.textContent='旁白';
+    speakerName.className='speaker-name narrator';
+  } else {
+    speakerName.textContent=line.speaker;
+    speakerName.className='speaker-name';
+  }
+  typeText(line.text);
+  showModeIndicator('已读取');
+}
+
+function getSaveData(slot){
+  const raw=localStorage.getItem('vn_save_'+slot);
+  return raw?JSON.parse(raw):null;
+}
+
+// ========== ENDING ==========
+function showEnding(){
+  if(autoTimer) clearTimeout(autoTimer);
+  autoMode=false;
+  skipMode=false;
+  document.getElementById('btn-auto').classList.remove('active');
+  document.getElementById('btn-skip').classList.remove('active');
+  progressFill.style.width='100%';
+  modeIndicator.textContent='—— 完 ——';
+  modeIndicator.classList.add('show');
+}
+
+// ========== FULLSCREEN ==========
+function toggleFullscreen(){
+  if(!document.fullscreenElement){
+    document.documentElement.requestFullscreen().catch(()=>{});
+  } else {
+    document.exitFullscreen().catch(()=>{});
+  }
+}
+
+// ========== KEYBOARD CONTROLS ==========
+document.addEventListener('keydown',(e)=>{
+  if(!gameStarted) return;
+  if(saveLoadScreen.classList.contains('show')){
+    if(e.key==='Escape') closeSaveLoad();
+    return;
+  }
+  switch(e.key){
+    case ' ':
+    case 'Enter':
+      e.preventDefault();
+      advanceLine();
+      break;
+    case 'Control':
+      e.preventDefault();
+      toggleSkip();
+      break;
+    case 'a':
+    case 'A':
+      toggleAuto();
+      break;
+    case 's':
+    case 'S':
+      showSaveScreen();
+      break;
+    case 'l':
+    case 'L':
+      showLoadScreen();
+      break;
+    case 'Escape':
+      if(autoMode) toggleAuto();
+      if(skipMode) toggleSkip();
+      break;
+    case 'h':
+    case 'H':
+      toggleDialog();
+      break;
+    case 'f':
+    case 'F':
+      toggleFullscreen();
+      break;
+  }
+});
+
+// ========== MOUSE / TOUCH ==========
+document.getElementById('game-container').addEventListener('click',(e)=>{
+  if(!gameStarted) return;
+  if(saveLoadScreen.classList.contains('show')) return;
+  if(e.target.closest('#control-panel')||e.target.closest('#fullscreen-btn')) return;
+  advanceLine();
+});
+
+// ========== INIT ==========
+// Preload all images
+scenario.forEach(sc=>{
+  const img=new Image();
+  img.src=sc.cg;
+});
+</script>
+</body>
+</html>

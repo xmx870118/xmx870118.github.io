@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>赵雨萱 CG Gallery ~ 樱花树下的约定 ~</title>
+<style>
+  /* ========== Reset & Base ========== */
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --pink-light: #fff0f5;
+    --pink-soft: #ffc0cb;
+    --pink-main: #f48fb1;
+    --pink-deep: #e91e8c;
+    --pink-dark: #c2185b;
+    --white: #ffffff;
+    --text-primary: #4a2040;
+    --text-secondary: #7a5068;
+    --shadow-pink: rgba(244, 143, 177, 0.35);
+    --glass-bg: rgba(255, 255, 255, 0.55);
+    --glass-border: rgba(255, 255, 255, 0.6);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Segoe UI', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    background: linear-gradient(180deg, var(--pink-light) 0%, #fff5f9 30%, #ffffff 60%, var(--pink-light) 100%);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* ========== Progress Bar ========== */
+  #progress-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 4px;
+    background: linear-gradient(90deg, var(--pink-soft), var(--pink-main), var(--pink-deep), var(--pink-main), var(--pink-soft));
+    background-size: 200% 100%;
+    animation: gradientShift 3s ease infinite;
+    z-index: 9999;
+    transition: width 0.15s ease-out;
+    box-shadow: 0 0 10px var(--shadow-pink);
+  }
+
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* ========== Falling Petals ========== */
+  .petal {
+    position: fixed;
+    top: -40px;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0;
+    animation: petalFall linear infinite;
+  }
+
+  .petal svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  @keyframes petalFall {
+    0% {
+      opacity: 0;
+      transform: translateY(0) rotate(0deg) translateX(0);
+    }
+    10% {
+      opacity: 0.8;
+    }
+    90% {
+      opacity: 0.6;
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(100vh) rotate(720deg) translateX(80px);
+    }
+  }
+
+  /* ========== Header ========== */
+  .gallery-header {
+    text-align: center;
+    padding: 80px 20px 50px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .gallery-header h1 {
+    font-size: clamp(1.8rem, 5vw, 3rem);
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--pink-deep), var(--pink-main), var(--pink-dark));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
+    letter-spacing: 2px;
+    text-shadow: none;
+  }
+
+  .gallery-header .subtitle {
+    font-size: clamp(0.9rem, 2.5vw, 1.2rem);
+    color: var(--text-secondary);
+    font-weight: 300;
+    letter-spacing: 4px;
+  }
+
+  .gallery-header .divider {
+    width: 120px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--pink-main), transparent);
+    margin: 20px auto 0;
+    border-radius: 2px;
+  }
+
+  /* ========== Gallery Container ========== */
+  .gallery-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 20px 20px 80px;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* ========== Scene Card ========== */
+  .scene-card {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    margin-bottom: 60px;
+    opacity: 0;
+    transform: translateY(50px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+
+  .scene-card.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Odd: image left, text right (default) */
+  .scene-card .scene-image-wrap {
+    flex: 0 0 50%;
+    order: 1;
+  }
+
+  .scene-card .scene-text {
+    flex: 1;
+    order: 2;
+  }
+
+  /* Even: text left, image right */
+  .scene-card.reverse .scene-image-wrap {
+    order: 2;
+  }
+
+  .scene-card.reverse .scene-text {
+    order: 1;
+  }
+
+  /* ========== Glass Card ========== */
+  .scene-image-wrap {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    box-shadow:
+      0 8px 32px var(--shadow-pink),
+      0 2px 8px rgba(0,0,0,0.06);
+    cursor: pointer;
+    transition: transform 0.4s ease, box-shadow 0.4s ease;
+  }
+
+  .scene-image-wrap:hover {
+    transform: translateY(-6px) scale(1.02);
+    box-shadow:
+      0 16px 48px var(--shadow-pink),
+      0 4px 16px rgba(0,0,0,0.1);
+  }
+
+  .scene-image-wrap img {
+    width: 100%;
+    display: block;
+    border-radius: 16px;
+    transition: transform 0.5s ease;
+  }
+
+  .scene-image-wrap:hover img {
+    transform: scale(1.05);
+  }
+
+  .scene-number {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: linear-gradient(135deg, var(--pink-deep), var(--pink-main));
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 700;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px var(--shadow-pink);
+    z-index: 3;
+  }
+
+  .scene-card.reverse .scene-number {
+    left: auto;
+    right: 12px;
+  }
+
+  .zoom-hint {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    background: rgba(0,0,0,0.45);
+    color: white;
+    font-size: 0.7rem;
+    padding: 4px 10px;
+    border-radius: 20px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+
+  .scene-image-wrap:hover .zoom-hint {
+    opacity: 1;
+  }
+
+  /* ========== Text Content ========== */
+  .scene-text {
+    padding: 10px 0;
+  }
+
+  .scene-text h2 {
+    font-size: clamp(1.2rem, 3vw, 1.6rem);
+    font-weight: 600;
+    color: var(--pink-dark);
+    margin-bottom: 10px;
+    position: relative;
+    padding-bottom: 10px;
+  }
+
+  .scene-text h2::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 50px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--pink-main), transparent);
+    border-radius: 3px;
+  }
+
+  .scene-card.reverse .scene-text h2::after {
+    left: auto;
+    right: 0;
+    background: linear-gradient(90deg, transparent, var(--pink-main));
+  }
+
+  .scene-text .scene-desc {
+    font-size: clamp(0.9rem, 2vw, 1.05rem);
+    color: var(--text-secondary);
+    line-height: 1.8;
+    font-weight: 300;
+  }
+
+  .scene-text .scene-tag {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 4px 14px;
+    background: linear-gradient(135deg, rgba(244,143,177,0.15), rgba(233,30,140,0.1));
+    color: var(--pink-dark);
+    font-size: 0.8rem;
+    border-radius: 20px;
+    border: 1px solid rgba(244,143,177,0.3);
+  }
+
+  /* ========== Lightbox ========== */
+  .lightbox {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.92);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.4s ease, visibility 0.4s ease;
+    cursor: pointer;
+  }
+
+  .lightbox.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .lightbox img {
+    max-width: 90vw;
+    max-height: 90vh;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 0 60px rgba(244, 143, 177, 0.3);
+    transform: scale(0.85);
+    transition: transform 0.4s ease;
+  }
+
+  .lightbox.active img {
+    transform: scale(1);
+  }
+
+  .lightbox-close {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    color: white;
+    font-size: 2rem;
+    cursor: pointer;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    transition: background 0.3s ease;
+    z-index: 10001;
+  }
+
+  .lightbox-close:hover {
+    background: rgba(255,255,255,0.25);
+  }
+
+  .lightbox-info {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255,255,255,0.85);
+    font-size: 1rem;
+    text-align: center;
+    background: rgba(0,0,0,0.5);
+    padding: 8px 24px;
+    border-radius: 20px;
+    backdrop-filter: blur(8px);
+  }
+
+  .lightbox-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    color: white;
+    font-size: 2rem;
+    cursor: pointer;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    transition: background 0.3s ease;
+    user-select: none;
+  }
+
+  .lightbox-nav:hover {
+    background: rgba(255,255,255,0.25);
+  }
+
+  .lightbox-prev { left: 20px; }
+  .lightbox-next { right: 20px; }
+
+  /* ========== Footer ========== */
+  .gallery-footer {
+    text-align: center;
+    padding: 40px 20px 60px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .gallery-footer .footer-text {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-weight: 300;
+    letter-spacing: 2px;
+  }
+
+  .gallery-footer .footer-divider {
+    width: 80px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--pink-soft), transparent);
+    margin: 16px auto 0;
+  }
+
+  /* ========== Back to Top ========== */
+  .back-to-top {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--pink-main), var(--pink-deep));
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px var(--shadow-pink);
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    z-index: 100;
+  }
+
+  .back-to-top.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .back-to-top:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px var(--shadow-pink);
+  }
+
+  /* ========== Responsive ========== */
+  @media (max-width: 768px) {
+    .scene-card,
+    .scene-card.reverse {
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .scene-card .scene-image-wrap,
+    .scene-card .scene-text,
+    .scene-card.reverse .scene-image-wrap,
+    .scene-card.reverse .scene-text {
+      flex: 1 1 100%;
+      order: unset !important;
+    }
+
+    .scene-card .scene-number,
+    .scene-card.reverse .scene-number {
+      left: 12px;
+      right: auto;
+    }
+
+    .scene-text h2::after,
+    .scene-card.reverse .scene-text h2::after {
+      left: 0;
+      right: auto;
+      background: linear-gradient(90deg, var(--pink-main), transparent);
+    }
+
+    .gallery-header {
+      padding: 60px 20px 30px;
+    }
+
+    .scene-card {
+      margin-bottom: 40px;
+    }
+
+    .lightbox-nav { display: none; }
+  }
+
+  @media (max-width: 480px) {
+    .gallery-header h1 {
+      font-size: 1.5rem;
+    }
+    .scene-text h2 {
+      font-size: 1.1rem;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- Progress Bar -->
+<div id="progress-bar"></div>
+
+<!-- Falling Petals Container -->
+<div id="petals-container"></div>
+
+<!-- Header -->
+<header class="gallery-header">
+  <h1>赵雨萱 CG Gallery</h1>
+  <p class="subtitle">~ 樱花树下的约定 ~</p>
+  <div class="divider"></div>
+</header>
+
+<!-- Gallery -->
+<main class="gallery-container" id="gallery">
+
+  <!-- 01 -->
+  <div class="scene-card" data-index="0">
+    <div class="scene-image-wrap" onclick="openLightbox(0)">
+      <span class="scene-number">01</span>
+      <img src="scene_01_first_meeting.jpg" alt="初遇：樱花树下的相遇" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>初遇：樱花树下的相遇</h2>
+      <p class="scene-desc">春风拂过校园的樱花大道，粉色的花瓣纷纷扬扬飘落在她的发间。她站在树下，琥珀色的眼眸映着漫天飞花，回眸一笑，便是一生的羁绊。</p>
+      <span class="scene-tag">序章</span>
+    </div>
+  </div>
+
+  <!-- 02 -->
+  <div class="scene-card reverse" data-index="1">
+    <div class="scene-image-wrap" onclick="openLightbox(1)">
+      <span class="scene-number">02</span>
+      <img src="scene_02_classroom_intro.jpg" alt="教室：人气女生的日常" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>教室：人气女生的日常</h2>
+      <p class="scene-desc">清晨的阳光洒进教室，她坐在靠窗的位置，粉色的长发在微风中轻轻飘动。课桌上摆着精致的文具，同学们围在她身边，而她的目光却不时望向窗外。</p>
+      <span class="scene-tag">日常</span>
+    </div>
+  </div>
+
+  <!-- 03 -->
+  <div class="scene-card" data-index="2">
+    <div class="scene-image-wrap" onclick="openLightbox(2)">
+      <span class="scene-number">03</span>
+      <img src="scene_03_helping_hand.jpg" alt="走廊：帮忙捡书" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>走廊：帮忙捡书</h2>
+      <p class="scene-desc">走廊上，课本散落一地。她蹲下身来帮忙捡拾，指尖不经意间触碰到一起，两人的脸都微微泛红。那一刻，时间仿佛静止了。</p>
+      <span class="scene-tag">邂逅</span>
+    </div>
+  </div>
+
+  <!-- 04 -->
+  <div class="scene-card reverse" data-index="3">
+    <div class="scene-image-wrap" onclick="openLightbox(3)">
+      <span class="scene-number">04</span>
+      <img src="scene_04_lunch_together.jpg" alt="天台：一起吃便当" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>天台：一起吃便当</h2>
+      <p class="scene-desc">天台上微风习习，她亲手做的便当精致得像艺术品。两人并肩坐在长椅上，分享着彼此的食物，远处是连绵的山峦和蔚蓝的天空。</p>
+      <span class="scene-tag">日常</span>
+    </div>
+  </div>
+
+  <!-- 05 -->
+  <div class="scene-card" data-index="4">
+    <div class="scene-image-wrap" onclick="openLightbox(4)">
+      <span class="scene-number">05</span>
+      <img src="scene_05_rain_shelter.jpg" alt="雨天：共撑一把伞" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>雨天：共撑一把伞</h2>
+      <p class="scene-desc">突如其来的阵雨，她把伞倾向了你的方向，自己的肩膀却被雨水打湿。雨滴落在伞面上发出清脆的声响，两个人的距离在伞下悄然拉近。</p>
+      <span class="scene-tag">邂逅</span>
+    </div>
+  </div>
+
+  <!-- 06 -->
+  <div class="scene-card reverse" data-index="5">
+    <div class="scene-image-wrap" onclick="openLightbox(5)">
+      <span class="scene-number">06</span>
+      <img src="scene_06_library_study.jpg" alt="图书馆：一起学习" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>图书馆：一起学习</h2>
+      <p class="scene-desc">午后的图书馆安静而温暖，阳光透过落地窗洒在书桌上。她认真地做着笔记，偶尔抬起头来，发现你正偷偷看着她，便害羞地低下头去。</p>
+      <span class="scene-tag">日常</span>
+    </div>
+  </div>
+
+  <!-- 07 -->
+  <div class="scene-card" data-index="6">
+    <div class="scene-image-wrap" onclick="openLightbox(6)">
+      <span class="scene-number">07</span>
+      <img src="scene_07_sports_festival.jpg" alt="运动会：加油助威" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>运动会：加油助威</h2>
+      <p class="scene-desc">红色的跑道上尘土飞扬，她在看台上挥舞着应援旗，用尽全力为你呐喊。阳光下，她的笑容比任何奖牌都耀眼。</p>
+      <span class="scene-tag">校园</span>
+    </div>
+  </div>
+
+  <!-- 08 -->
+  <div class="scene-card reverse" data-index="7">
+    <div class="scene-image-wrap" onclick="openLightbox(7)">
+      <span class="scene-number">08</span>
+      <img src="scene_08_cultural_festival.jpg" alt="文化祭：女仆咖啡厅" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>文化祭：女仆咖啡厅</h2>
+      <p class="scene-desc">文化祭的教室被改造成了可爱的咖啡厅，她穿着女仆装，脸颊微红地递上一杯特制饮品。那一刻的可爱，让人心跳加速。</p>
+      <span class="scene-tag">校园</span>
+    </div>
+  </div>
+
+  <!-- 09 -->
+  <div class="scene-card" data-index="8">
+    <div class="scene-image-wrap" onclick="openLightbox(8)">
+      <span class="scene-number">09</span>
+      <img src="scene_09_sunset_confession.jpg" alt="黄昏：告白" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>黄昏：告白</h2>
+      <p class="scene-desc">夕阳将天空染成橘红色，她站在天台的围栏旁，风吹动她的粉色长发。鼓起全部勇气，终于说出了那句藏在心底许久的话——"我喜欢你。"</p>
+      <span class="scene-tag">告白</span>
+    </div>
+  </div>
+
+  <!-- 10 -->
+  <div class="scene-card reverse" data-index="9">
+    <div class="scene-image-wrap" onclick="openLightbox(9)">
+      <span class="scene-number">10</span>
+      <img src="scene_10_first_date.jpg" alt="第一次约会：商业街" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>第一次约会：商业街</h2>
+      <p class="scene-desc">第一次正式约会，两人走在繁华的商业街上。她牵着你的衣角，好奇地张望着橱窗里的商品，脸上洋溢着幸福的笑容。</p>
+      <span class="scene-tag">约会</span>
+    </div>
+  </div>
+
+  <!-- 11 -->
+  <div class="scene-card" data-index="10">
+    <div class="scene-image-wrap" onclick="openLightbox(10)">
+      <span class="scene-number">11</span>
+      <img src="scene_11_amusement_park.jpg" alt="游乐园：摩天轮" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>游乐园：摩天轮</h2>
+      <p class="scene-desc">游乐园里充满了欢声笑语，她拉着你的手奔向摩天轮。旋转木马上她的裙摆飞扬，过山车上她紧紧握住你的手，每一个瞬间都值得珍藏。</p>
+      <span class="scene-tag">约会</span>
+    </div>
+  </div>
+
+  <!-- 12 -->
+  <div class="scene-card reverse" data-index="11">
+    <div class="scene-image-wrap" onclick="openLightbox(11)">
+      <span class="scene-number">12</span>
+      <img src="scene_12_ferris_wheel.jpg" alt="摩天轮上：城市夜景" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>摩天轮上：城市夜景</h2>
+      <p class="scene-desc">摩天轮缓缓升到最高处，整座城市的灯火尽收眼底。她靠在你的肩上，琥珀色的眼眸里倒映着万家灯火，轻声说："想和你一直这样下去。"</p>
+      <span class="scene-tag">约会</span>
+    </div>
+  </div>
+
+  <!-- 13 -->
+  <div class="scene-card" data-index="12">
+    <div class="scene-image-wrap" onclick="openLightbox(12)">
+      <span class="scene-number">13</span>
+      <img src="scene_13_fireworks.jpg" alt="夏日花火大会" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>夏日花火大会</h2>
+      <p class="scene-desc">穿着浴衣的她美得令人窒息，烟花在夜空中绽放出绚烂的色彩。她拉着你的手穿过人群，在烟花最灿烂的那一刻，偷偷许下了心愿。</p>
+      <span class="scene-tag">夏日</span>
+    </div>
+  </div>
+
+  <!-- 14 -->
+  <div class="scene-card reverse" data-index="13">
+    <div class="scene-image-wrap" onclick="openLightbox(13)">
+      <span class="scene-number">14</span>
+      <img src="scene_14_sick_visit.jpg" alt="探病：亲手煮粥" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>探病：亲手煮粥</h2>
+      <p class="scene-desc">生病卧床的日子，她提着保温桶出现在门口。亲手熬的白粥热气腾腾，她坐在床边，用手背试探着温度，眼中满是心疼与温柔。</p>
+      <span class="scene-tag">日常</span>
+    </div>
+  </div>
+
+  <!-- 15 -->
+  <div class="scene-card" data-index="14">
+    <div class="scene-image-wrap" onclick="openLightbox(14)">
+      <span class="scene-number">15</span>
+      <img src="scene_15_christmas_eve.jpg" alt="圣诞夜：交换礼物" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>圣诞夜：交换礼物</h2>
+      <p class="scene-desc">圣诞树上的彩灯闪烁，她递过来精心包装的礼物，脸上带着期待又害羞的表情。拆开礼物的瞬间，是一双手工编织的围巾——她花了一个月的时间。</p>
+      <span class="scene-tag">圣诞</span>
+    </div>
+  </div>
+
+  <!-- 16 -->
+  <div class="scene-card reverse" data-index="15">
+    <div class="scene-image-wrap" onclick="openLightbox(15)">
+      <span class="scene-number">16</span>
+      <img src="scene_16_snow_walk.jpg" alt="冬日：雪中漫步" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>冬日：雪中漫步</h2>
+      <p class="scene-desc">初雪降临的夜晚，两人走在铺满白雪的小路上。她伸出双手接住飘落的雪花，呼出的白气在冷空气中消散，十指紧紧相扣。</p>
+      <span class="scene-tag">冬日</span>
+    </div>
+  </div>
+
+  <!-- 17 -->
+  <div class="scene-card" data-index="16">
+    <div class="scene-image-wrap" onclick="openLightbox(16)">
+      <span class="scene-number">17</span>
+      <img src="scene_17_valentine_chocolate.jpg" alt="情人节：手工巧克力" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>情人节：手工巧克力</h2>
+      <p class="scene-desc">情人节那天，她红着脸递过来一个粉色的盒子。打开一看，是形状各异的手工巧克力，每一颗上都刻着小小的爱心，甜蜜得让人心都化了。</p>
+      <span class="scene-tag">情人节</span>
+    </div>
+  </div>
+
+  <!-- 18 -->
+  <div class="scene-card reverse" data-index="17">
+    <div class="scene-image-wrap" onclick="openLightbox(17)">
+      <span class="scene-number">18</span>
+      <img src="scene_18_white_day_return.jpg" alt="白色情人节：回礼" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>白色情人节：回礼</h2>
+      <p class="scene-desc">白色情人节，你准备了精心挑选的回礼。她接过礼物的瞬间，眼中闪烁着惊喜的光芒，然后露出了那个让你永远无法忘记的微笑。</p>
+      <span class="scene-tag">情人节</span>
+    </div>
+  </div>
+
+  <!-- 19 -->
+  <div class="scene-card" data-index="18">
+    <div class="scene-image-wrap" onclick="openLightbox(18)">
+      <span class="scene-number">19</span>
+      <img src="scene_19_star_gazing.jpg" alt="星空：看流星" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>星空：看流星</h2>
+      <p class="scene-desc">远离城市灯光的山丘上，满天繁星如钻石般闪耀。她靠在你身旁，一颗流星划过夜空，她闭上眼睛许愿——"希望永远和你在一起。"</p>
+      <span class="scene-tag">浪漫</span>
+    </div>
+  </div>
+
+  <!-- 20 -->
+  <div class="scene-card reverse" data-index="19">
+    <div class="scene-image-wrap" onclick="openLightbox(19)">
+      <span class="scene-number">20</span>
+      <img src="scene_20_promise_ring.jpg" alt="樱花树下：拉钩约定" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>樱花树下：拉钩约定</h2>
+      <p class="scene-desc">回到最初相遇的樱花树下，两人伸出小指拉钩。"拉钩上吊，一百年不许变。"粉色的花瓣见证了这个纯真而坚定的约定。</p>
+      <span class="scene-tag">约定</span>
+    </div>
+  </div>
+
+  <!-- 21 -->
+  <div class="scene-card" data-index="20">
+    <div class="scene-image-wrap" onclick="openLightbox(20)">
+      <span class="scene-number">21</span>
+      <img src="scene_21_morning_greeting.jpg" alt="每日：校门口等待" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>每日：校门口等待</h2>
+      <p class="scene-desc">每天清晨，她都会提前十分钟站在校门口等待。看到你出现的瞬间，她的脸上绽放出最灿烂的笑容——那是属于你一个人的早安问候。</p>
+      <span class="scene-tag">日常</span>
+    </div>
+  </div>
+
+  <!-- 22 -->
+  <div class="scene-card reverse" data-index="21">
+    <div class="scene-image-wrap" onclick="openLightbox(21)">
+      <span class="scene-number">22</span>
+      <img src="scene_22_baking_together.jpg" alt="烹饪课：一起做饼干" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>烹饪课：一起做饼干</h2>
+      <p class="scene-desc">烹饪课上两人一组，她认真地揉着面团，鼻尖上沾满了面粉。做出来的饼干形状歪歪扭扭，但因为是两个人一起做的，所以格外甜蜜。</p>
+      <span class="scene-tag">日常</span>
+    </div>
+  </div>
+
+  <!-- 23 -->
+  <div class="scene-card" data-index="22">
+    <div class="scene-image-wrap" onclick="openLightbox(22)">
+      <span class="scene-number">23</span>
+      <img src="scene_23_photo_booth.jpg" alt="大头贴：可爱合影" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>大头贴：可爱合影</h2>
+      <p class="scene-desc">大头贴机器里，她摆出各种可爱的姿势，拉着你的脸凑近镜头。快门按下的瞬间，定格了两个最幸福的笑脸。这一张照片，被她珍藏了很久很久。</p>
+      <span class="scene-tag">约会</span>
+    </div>
+  </div>
+
+  <!-- 24 -->
+  <div class="scene-card reverse" data-index="23">
+    <div class="scene-image-wrap" onclick="openLightbox(23)">
+      <span class="scene-number">24</span>
+      <img src="scene_24_rain_umbrella.jpg" alt="雨中漫步：共伞" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>雨中漫步：共伞</h2>
+      <p class="scene-desc">放学后的细雨中，两人共撑一把伞走在回家的路上。雨丝如帘，路灯的光晕朦胧而温暖。她悄悄靠近了一些，肩膀轻轻依偎在一起。</p>
+      <span class="scene-tag">邂逅</span>
+    </div>
+  </div>
+
+  <!-- 25 -->
+  <div class="scene-card" data-index="24">
+    <div class="scene-image-wrap" onclick="openLightbox(24)">
+      <span class="scene-number">25</span>
+      <img src="scene_25_school_roof_talk.jpg" alt="天台谈心" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>天台谈心</h2>
+      <p class="scene-desc">午休时分的天台，只有风声和两人的低语。她靠在栏杆上，望着远方的天际线，轻声诉说着自己的梦想和不安。你默默倾听，握紧了她的手。</p>
+      <span class="scene-tag">日常</span>
+    </div>
+  </div>
+
+  <!-- 26 -->
+  <div class="scene-card reverse" data-index="25">
+    <div class="scene-image-wrap" onclick="openLightbox(25)">
+      <span class="scene-number">26</span>
+      <img src="scene_26_exam_cheer.jpg" alt="考前加油：御守" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>考前加油：御守</h2>
+      <p class="scene-desc">考试前夕，她递过来一个粉色的御守，上面绣着小小的樱花图案。"这是我去神社为你求的，一定会顺利的！"她的眼中满是鼓励与信任。</p>
+      <span class="scene-tag">校园</span>
+    </div>
+  </div>
+
+  <!-- 27 -->
+  <div class="scene-card" data-index="26">
+    <div class="scene-image-wrap" onclick="openLightbox(26)">
+      <span class="scene-number">27</span>
+      <img src="scene_27_sunset_train.jpg" alt="电车窗边：夕阳剪影" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>电车窗边：夕阳剪影</h2>
+      <p class="scene-desc">放学后的电车上，她靠在窗边打盹，夕阳的余晖透过车窗洒在她的脸上，镀上了一层金色的光芒。你悄悄把外套披在她肩上，不忍打扰这份宁静。</p>
+      <span class="scene-tag">日常</span>
+    </div>
+  </div>
+
+  <!-- 28 -->
+  <div class="scene-card reverse" data-index="27">
+    <div class="scene-image-wrap" onclick="openLightbox(27)">
+      <span class="scene-number">28</span>
+      <img src="scene_28_flower_garden.jpg" alt="花园：送你一朵玫瑰" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>花园：送你一朵玫瑰</h2>
+      <p class="scene-desc">周末的植物园里百花盛开，她在花丛中穿梭，最终挑选了一朵最美的粉色玫瑰，别在你的胸前。"这朵花，就像你在我心中的样子。"</p>
+      <span class="scene-tag">约会</span>
+    </div>
+  </div>
+
+  <!-- 29 -->
+  <div class="scene-card" data-index="28">
+    <div class="scene-image-wrap" onclick="openLightbox(28)">
+      <span class="scene-number">29</span>
+      <img src="scene_29_festival_dance.jpg" alt="盆踊り：邀请共舞" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>盆踊り：邀请共舞</h2>
+      <p class="scene-desc">夏日祭的盆踊り会场，太鼓的节奏热烈而欢快。她穿着浴衣向你伸出手，脸上带着羞涩而期待的微笑。"一起跳吧？"</p>
+      <span class="scene-tag">夏日</span>
+    </div>
+  </div>
+
+  <!-- 30 -->
+  <div class="scene-card reverse" data-index="29">
+    <div class="scene-image-wrap" onclick="openLightbox(29)">
+      <span class="scene-number">30</span>
+      <img src="scene_30_park_swing.jpg" alt="公园秋千：纯真时光" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>公园秋千：纯真时光</h2>
+      <p class="scene-desc">周末的公园里，她坐在秋千上轻轻荡着，裙摆随风飘动。你站在身后轻轻推着秋千，她的笑声清脆如铃，回荡在午后的阳光里。</p>
+      <span class="scene-tag">日常</span>
+    </div>
+  </div>
+
+  <!-- 31 -->
+  <div class="scene-card" data-index="30">
+    <div class="scene-image-wrap" onclick="openLightbox(30)">
+      <span class="scene-number">31</span>
+      <img src="scene_31_graduation_day.jpg" alt="毕业典礼" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>毕业典礼</h2>
+      <p class="scene-desc">毕业典礼上，她穿着制服站在校门前，眼中含着不舍的泪水。三年的青春岁月即将画上句号，但这段感情，才刚刚开始新的篇章。</p>
+      <span class="scene-tag">毕业</span>
+    </div>
+  </div>
+
+  <!-- 32 -->
+  <div class="scene-card reverse" data-index="31">
+    <div class="scene-image-wrap" onclick="openLightbox(31)">
+      <span class="scene-number">32</span>
+      <img src="scene_32_second_button.jpg" alt="第二颗纽扣" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>第二颗纽扣</h2>
+      <p class="scene-desc">毕业的传统——女生向心仪的男生要第二颗纽扣。她红着脸伸出手，你解下制服上的纽扣放在她的掌心。"这是离心脏最近的纽扣，代表着我的心。"</p>
+      <span class="scene-tag">毕业</span>
+    </div>
+  </div>
+
+  <!-- 33 -->
+  <div class="scene-card" data-index="32">
+    <div class="scene-image-wrap" onclick="openLightbox(32)">
+      <span class="scene-number">33</span>
+      <img src="scene_33_future_promise.jpg" alt="樱花树下的约定" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>樱花树下的约定</h2>
+      <p class="scene-desc">再次回到樱花树下，花瓣如当初一样纷飞。她认真地望着你的眼睛："不管未来怎样，我们都要在一起。"这个约定，比任何誓言都重。</p>
+      <span class="scene-tag">约定</span>
+    </div>
+  </div>
+
+  <!-- 34 -->
+  <div class="scene-card reverse" data-index="33">
+    <div class="scene-image-wrap" onclick="openLightbox(33)">
+      <span class="scene-number">34</span>
+      <img src="scene_34_university_campus.jpg" alt="大学：新的开始" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>大学：新的开始</h2>
+      <p class="scene-desc">大学的校园里，她挽着你的手臂走在林荫道上。新的环境、新的朋友，但身边的人始终没有变。未来充满了无限可能，而你们将携手前行。</p>
+      <span class="scene-tag">未来</span>
+    </div>
+  </div>
+
+  <!-- 35 -->
+  <div class="scene-card" data-index="34">
+    <div class="scene-image-wrap" onclick="openLightbox(34)">
+      <span class="scene-number">35</span>
+      <img src="scene_35_cafe_date.jpg" alt="咖啡厅约会" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>咖啡厅约会</h2>
+      <p class="scene-desc">街角的咖啡厅里飘着浓郁的香气，她点了一杯草莓拿铁，用小勺搅动着奶泡。午后的阳光透过落地窗，洒在两人之间，温暖而惬意。</p>
+      <span class="scene-tag">约会</span>
+    </div>
+  </div>
+
+  <!-- 36 -->
+  <div class="scene-card reverse" data-index="35">
+    <div class="scene-image-wrap" onclick="openLightbox(35)">
+      <span class="scene-number">36</span>
+      <img src="scene_36_birthday_surprise.jpg" alt="生日惊喜" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>生日惊喜</h2>
+      <p class="scene-desc">推开家门的那一刻，灯光突然亮起，她捧着插满蜡烛的蛋糕站在面前。"生日快乐！"烛光映照着她的笑脸，这是最好的生日礼物。</p>
+      <span class="scene-tag">日常</span>
+    </div>
+  </div>
+
+  <!-- 37 -->
+  <div class="scene-card" data-index="36">
+    <div class="scene-image-wrap" onclick="openLightbox(36)">
+      <span class="scene-number">37</span>
+      <img src="scene_37_sunset_beach.jpg" alt="海边日落" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>海边日落</h2>
+      <p class="scene-desc">金色的沙滩上，海浪轻轻拍打着岸边。夕阳将天空和大海染成一片橘红，她赤脚走在水边，海风吹动她的长发，美得像一幅画。</p>
+      <span class="scene-tag">浪漫</span>
+    </div>
+  </div>
+
+  <!-- 38 -->
+  <div class="scene-card reverse" data-index="37">
+    <div class="scene-image-wrap" onclick="openLightbox(37)">
+      <span class="scene-number">38</span>
+      <img src="scene_38_proposal.jpg" alt="求婚" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>求婚</h2>
+      <p class="scene-desc">在最初的樱花树下，你单膝跪地，打开那枚精心挑选的戒指。她的泪水夺眶而出，用力地点了点头。"我愿意。"花瓣如雨般飘落，见证了这一刻。</p>
+      <span class="scene-tag">求婚</span>
+    </div>
+  </div>
+
+  <!-- 39 -->
+  <div class="scene-card" data-index="38">
+    <div class="scene-image-wrap" onclick="openLightbox(38)">
+      <span class="scene-number">39</span>
+      <img src="scene_39_wedding_preparation.jpg" alt="婚礼准备" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>婚礼准备</h2>
+      <p class="scene-desc">婚礼前的准备室里，她穿着洁白的婚纱，对着镜子整理着妆容。闺蜜们在一旁帮忙，空气中弥漫着紧张与幸福的气息。今天，她将成为最美的新娘。</p>
+      <span class="scene-tag">婚礼</span>
+    </div>
+  </div>
+
+  <!-- 40 -->
+  <div class="scene-card reverse" data-index="39">
+    <div class="scene-image-wrap" onclick="openLightbox(39)">
+      <span class="scene-number">40</span>
+      <img src="scene_40_wedding_chapel.jpg" alt="婚礼：幸福结局" loading="lazy">
+      <span class="zoom-hint">点击放大</span>
+    </div>
+    <div class="scene-text">
+      <h2>婚礼：幸福结局</h2>
+      <p class="scene-desc">教堂的钟声响起，她挽着父亲的手缓缓走过红毯。在神父面前交换誓言的那一刻，两人的眼中都闪烁着幸福的泪光。从樱花树下的初遇到此刻——这是最美的结局，也是新的开始。</p>
+      <span class="scene-tag">结局</span>
+    </div>
+  </div>
+
+</main>
+
+<!-- Footer -->
+<footer class="gallery-footer">
+  <p class="footer-text">~ 樱花树下的约定 ~ 赵雨萱 CG Gallery</p>
+  <div class="footer-divider"></div>
+</footer>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
+  <span class="lightbox-close" onclick="closeLightbox(event)">&times;</span>
+  <span class="lightbox-nav lightbox-prev" onclick="navLightbox(event, -1)">&#10094;</span>
+  <span class="lightbox-nav lightbox-next" onclick="navLightbox(event, 1)">&#10095;</span>
+  <img id="lightbox-img" src="" alt="">
+  <div class="lightbox-info" id="lightbox-info"></div>
+</div>
+
+<!-- Back to Top -->
+<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">&#9650;</button>
+
+<script>
+  // ========== Scene Data ==========
+  const scenes = [
+    { file: 'scene_01_first_meeting.jpg', title: '初遇：樱花树下的相遇' },
+    { file: 'scene_02_classroom_intro.jpg', title: '教室：人气女生的日常' },
+    { file: 'scene_03_helping_hand.jpg', title: '走廊：帮忙捡书' },
+    { file: 'scene_04_lunch_together.jpg', title: '天台：一起吃便当' },
+    { file: 'scene_05_rain_shelter.jpg', title: '雨天：共撑一把伞' },
+    { file: 'scene_06_library_study.jpg', title: '图书馆：一起学习' },
+    { file: 'scene_07_sports_festival.jpg', title: '运动会：加油助威' },
+    { file: 'scene_08_cultural_festival.jpg', title: '文化祭：女仆咖啡厅' },
+    { file: 'scene_09_sunset_confession.jpg', title: '黄昏：告白' },
+    { file: 'scene_10_first_date.jpg', title: '第一次约会：商业街' },
+    { file: 'scene_11_amusement_park.jpg', title: '游乐园：摩天轮' },
+    { file: 'scene_12_ferris_wheel.jpg', title: '摩天轮上：城市夜景' },
+    { file: 'scene_13_fireworks.jpg', title: '夏日花火大会' },
+    { file: 'scene_14_sick_visit.jpg', title: '探病：亲手煮粥' },
+    { file: 'scene_15_christmas_eve.jpg', title: '圣诞夜：交换礼物' },
+    { file: 'scene_16_snow_walk.jpg', title: '冬日：雪中漫步' },
+    { file: 'scene_17_valentine_chocolate.jpg', title: '情人节：手工巧克力' },
+    { file: 'scene_18_white_day_return.jpg', title: '白色情人节：回礼' },
+    { file: 'scene_19_star_gazing.jpg', title: '星空：看流星' },
+    { file: 'scene_20_promise_ring.jpg', title: '樱花树下：拉钩约定' },
+    { file: 'scene_21_morning_greeting.jpg', title: '每日：校门口等待' },
+    { file: 'scene_22_baking_together.jpg', title: '烹饪课：一起做饼干' },
+    { file: 'scene_23_photo_booth.jpg', title: '大头贴：可爱合影' },
+    { file: 'scene_24_rain_umbrella.jpg', title: '雨中漫步：共伞' },
+    { file: 'scene_25_school_roof_talk.jpg', title: '天台谈心' },
+    { file: 'scene_26_exam_cheer.jpg', title: '考前加油：御守' },
+    { file: 'scene_27_sunset_train.jpg', title: '电车窗边：夕阳剪影' },
+    { file: 'scene_28_flower_garden.jpg', title: '花园：送你一朵玫瑰' },
+    { file: 'scene_29_festival_dance.jpg', title: '盆踊り：邀请共舞' },
+    { file: 'scene_30_park_swing.jpg', title: '公园秋千：纯真时光' },
+    { file: 'scene_31_graduation_day.jpg', title: '毕业典礼' },
+    { file: 'scene_32_second_button.jpg', title: '第二颗纽扣' },
+    { file: 'scene_33_future_promise.jpg', title: '樱花树下的约定' },
+    { file: 'scene_34_university_campus.jpg', title: '大学：新的开始' },
+    { file: 'scene_35_cafe_date.jpg', title: '咖啡厅约会' },
+    { file: 'scene_36_birthday_surprise.jpg', title: '生日惊喜' },
+    { file: 'scene_37_sunset_beach.jpg', title: '海边日落' },
+    { file: 'scene_38_proposal.jpg', title: '求婚' },
+    { file: 'scene_39_wedding_preparation.jpg', title: '婚礼准备' },
+    { file: 'scene_40_wedding_chapel.jpg', title: '婚礼：幸福结局' }
+  ];
+
+  let currentLightboxIndex = 0;
+
+  // ========== Progress Bar ==========
+  function updateProgress() {
+    const scrollTop = window.scrollY;
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+    document.getElementById('progress-bar').style.width = progress + '%';
+  }
+
+  window.addEventListener('scroll', updateProgress);
+
+  // ========== Back to Top ==========
+  function updateBackToTop() {
+    const btn = document.getElementById('backToTop');
+    if (window.scrollY > 400) {
+      btn.classList.add('show');
+    } else {
+      btn.classList.remove('show');
+    }
+  }
+
+  window.addEventListener('scroll', updateBackToTop);
+
+  // ========== IntersectionObserver (Scroll Animation) ==========
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, {
+    threshold: 0.15,
+    rootMargin: '0px 0px -50px 0px'
+  });
+
+  document.querySelectorAll('.scene-card').forEach(card => {
+    observer.observe(card);
+  });
+
+  // ========== Lightbox ==========
+  function openLightbox(index) {
+    currentLightboxIndex = index;
+    const scene = scenes[index];
+    const lightbox = document.getElementById('lightbox');
+    const img = document.getElementById('lightbox-img');
+    const info = document.getElementById('lightbox-info');
+
+    img.src = scene.file;
+    info.textContent = (index + 1 < 10 ? '0' : '') + (index + 1) + ' / 40  ' + scene.title;
+    lightbox.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox(event) {
+    if (event.target === document.getElementById('lightbox') ||
+        event.target.classList.contains('lightbox-close')) {
+      document.getElementById('lightbox').classList.remove('active');
+      document.body.style.overflow = '';
+    }
+  }
+
+  function navLightbox(event, direction) {
+    event.stopPropagation();
+    currentLightboxIndex = (currentLightboxIndex + direction + scenes.length) % scenes.length;
+    const scene = scenes[currentLightboxIndex];
+    const img = document.getElementById('lightbox-img');
+    const info = document.getElementById('lightbox-info');
+
+    img.src = scene.file;
+    info.textContent = (currentLightboxIndex + 1 < 10 ? '0' : '') + (currentLightboxIndex + 1) + ' / 40  ' + scene.title;
+  }
+
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    const lightbox = document.getElementById('lightbox');
+    if (!lightbox.classList.contains('active')) return;
+    if (e.key === 'Escape') {
+      lightbox.classList.remove('active');
+      document.body.style.overflow = '';
+    } else if (e.key === 'ArrowLeft') {
+      navLightbox(e, -1);
+    } else if (e.key === 'ArrowRight') {
+      navLightbox(e, 1);
+    }
+  });
+
+  // ========== Falling Petals ==========
+  function createPetal() {
+    const container = document.getElementById('petals-container');
+    const petal = document.createElement('div');
+    petal.className = 'petal';
+
+    const size = 12 + Math.random() * 18;
+    const left = Math.random() * 100;
+    const duration = 8 + Math.random() * 10;
+    const delay = Math.random() * 2;
+    const hue = 330 + Math.random() * 30;
+    const saturation = 70 + Math.random() * 30;
+    const lightness = 70 + Math.random() * 20;
+
+    petal.style.cssText = `
+      left: ${left}vw;
+      width: ${size}px;
+      height: ${size}px;
+      animation-duration: ${duration}s;
+      animation-delay: ${delay}s;
+    `;
+
+    petal.innerHTML = `<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="20" cy="20" rx="12" ry="8" fill="hsl(${hue}, ${saturation}%, ${lightness}%)" opacity="0.8" transform="rotate(${Math.random()*60-30} 20 20)"/>
+      <ellipse cx="20" cy="20" rx="8" ry="12" fill="hsl(${hue}, ${saturation}%, ${lightness + 5}%))" opacity="0.6" transform="rotate(${Math.random()*60+30} 20 20)"/>
+    </svg>`;
+
+    container.appendChild(petal);
+
+    setTimeout(() => {
+      if (petal.parentNode) petal.parentNode.removeChild(petal);
+    }, (duration + delay) * 1000);
+  }
+
+  // Create petals periodically
+  function startPetals() {
+    // Initial batch
+    for (let i = 0; i < 15; i++) {
+      setTimeout(() => createPetal(), i * 300);
+    }
+    // Continuous
+    setInterval(() => {
+      if (document.querySelectorAll('.petal').length < 25) {
+        createPetal();
+      }
+    }, 600);
+  }
+
+  startPetals();
+</script>
+</body>
+</html>
