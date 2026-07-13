@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>林诗涵 · 剧情分镜CG图库 - 巴蜀中学竞赛班模拟器</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: linear-gradient(135deg, #1a0a1a, #0d050d);
+  min-height: 100vh;
+  font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  color: #fff;
+  overflow-x: hidden;
+}
+
+/* Header */
+.header {
+  text-align: center;
+  padding: 40px 20px 20px;
+  position: relative;
+}
+.header h1 {
+  font-size: 2em;
+  font-weight: 300;
+  letter-spacing: 0.2em;
+  color: #ffb6c1;
+  margin-bottom: 8px;
+}
+.header .subtitle {
+  color: rgba(255,255,255,0.5);
+  font-size: 0.95em;
+  margin-bottom: 8px;
+}
+.header .chapter-title {
+  color: rgba(255,182,193,0.7);
+  font-size: 1.1em;
+  font-style: italic;
+}
+
+/* Cherry blossom particles */
+.petal {
+  position: fixed;
+  width: 12px;
+  height: 12px;
+  background: linear-gradient(135deg, #ffb6c1, #ff69b4);
+  border-radius: 50% 0 50% 50%;
+  pointer-events: none;
+  opacity: 0.6;
+  animation: petalFall linear infinite;
+  z-index: 1;
+}
+@keyframes petalFall {
+  0% { transform: translateY(-20px) rotate(0deg) translateX(0); opacity: 0.6; }
+  100% { transform: translateY(100vh) rotate(360deg) translateX(50px); opacity: 0; }
+}
+
+/* Gallery Grid */
+.gallery-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+  position: relative;
+  z-index: 2;
+}
+.scene-card {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 40px;
+  padding: 24px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,182,193,0.1);
+  border-radius: 16px;
+  transition: all 0.4s ease;
+  opacity: 0;
+  transform: translateY(30px);
+}
+.scene-card.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.scene-card:hover {
+  background: rgba(255,182,193,0.05);
+  border-color: rgba(255,182,193,0.3);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(255,107,157,0.15);
+}
+.scene-card:nth-child(even) {
+  flex-direction: row-reverse;
+}
+.scene-image {
+  flex: 0 0 480px;
+  height: 270px;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+}
+.scene-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s ease;
+}
+.scene-image:hover img {
+  transform: scale(1.08);
+}
+.scene-image .scene-number {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(0,0,0,0.6);
+  color: #ffb6c1;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8em;
+  font-weight: 600;
+}
+.scene-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.scene-info .scene-title {
+  font-size: 1.3em;
+  color: #ffb6c1;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+.scene-info .scene-desc {
+  color: rgba(255,255,255,0.7);
+  line-height: 1.8;
+  font-size: 0.95em;
+}
+.scene-info .scene-quote {
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: rgba(255,182,193,0.08);
+  border-left: 3px solid #ff6b9d;
+  border-radius: 0 8px 8px 0;
+  color: rgba(255,255,255,0.8);
+  font-style: italic;
+  font-size: 0.9em;
+}
+
+/* Lightbox */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.95);
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+.lightbox.active {
+  display: flex;
+}
+.lightbox img {
+  max-width: 90vw;
+  max-height: 75vh;
+  border-radius: 8px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.lightbox .lightbox-info {
+  margin-top: 20px;
+  text-align: center;
+  color: rgba(255,255,255,0.8);
+}
+.lightbox .lightbox-info h3 {
+  color: #ffb6c1;
+  font-size: 1.2em;
+  margin-bottom: 4px;
+}
+.lightbox .nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  font-size: 1.5em;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lightbox .nav-btn:hover {
+  background: rgba(255,182,193,0.2);
+  border-color: #ffb6c1;
+}
+.lightbox .nav-btn.prev { left: 20px; }
+.lightbox .nav-btn.next { right: 20px; }
+.lightbox .close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 1.2em;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.lightbox .close-btn:hover {
+  background: rgba(255,107,157,0.3);
+  border-color: #ff6b9d;
+}
+
+/* Progress bar */
+.progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #ff6b9d, #ffb6c1);
+  width: 0%;
+  z-index: 100;
+  transition: width 0.3s;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .scene-card, .scene-card:nth-child(even) {
+    flex-direction: column;
+  }
+  .scene-image {
+    flex: none;
+    width: 100%;
+    height: 200px;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+
+<div class="header">
+  <h1>林诗涵 · 剧情分镜CG图库</h1>
+  <div class="subtitle">巴蜀中学竞赛班模拟器 · 专属剧情画廊</div>
+  <div class="chapter-title">"你是我诗中最美的韵脚"</div>
+</div>
+
+<div class="gallery-container" id="gallery"></div>
+
+<div class="lightbox" id="lightbox">
+  <button class="close-btn" onclick="closeLightbox()">&times;</button>
+  <button class="nav-btn prev" onclick="navigate(-1)">&#8249;</button>
+  <img id="lightboxImg" src="" alt="">
+  <div class="lightbox-info" id="lightboxInfo"></div>
+  <button class="nav-btn next" onclick="navigate(1)">&#8250;</button>
+</div>
+
+<script>
+const SCENES = [
+  { img: 'scene_01_first_meeting.jpg', title: 'Scene 01 · 初遇', desc: '樱花飘落的走廊，她抱着素描本抬头的一瞬间，时间仿佛静止了。', quote: '「那一刻，我的世界只剩下樱花和你。」' },
+  { img: 'scene_02_library_encounter.jpg', title: 'Scene 02 · 图书馆的邂逅', desc: '午后的阳光洒进书架之间，她安静地读着诗集，像一幅画。', quote: '「书页翻动的声音，是我听过最美的旋律。」' },
+  { img: 'scene_03_painting_class.jpg', title: 'Scene 03 · 画室时光', desc: '她专注地在画布上涂抹色彩，颜料沾满了指尖，却浑然不觉。', quote: '「你的每一笔，都在我心里画下了痕迹。」' },
+  { img: 'scene_04_rain_shelter.jpg', title: 'Scene 04 · 雨中的等待', desc: '暴雨突至，她站在校门口避雨，眼中带着一丝不安。', quote: '「雨再大也没关系，因为我来了。」' },
+  { img: 'scene_05_sharing_umbrella.jpg', title: 'Scene 05 · 共伞同行', desc: '小小的雨伞下，两人的距离从未如此接近，心跳声盖过了雨声。', quote: '「这把伞太小，但刚好够装下两个人。」' },
+  { img: 'scene_06_rooftop_sunset.jpg', title: 'Scene 06 · 天台夕阳', desc: '她站在天台，手握纸鹤，望着远方的城市，夕阳染红了她的侧脸。', quote: '「夕阳再美，也比不上你眼里的光。」' },
+  { img: 'scene_07_secret_garden.jpg', title: 'Scene 07 · 秘密花园', desc: '校园后方的隐秘花园里，蝴蝶环绕，她发现了这片只属于两人的天地。', quote: '「这个秘密，我只想和你分享。」' },
+  { img: 'scene_08_festival_night.jpg', title: 'Scene 08 · 夏祭之夜', desc: '穿着浴衣的她，在烟火和灯笼的映照下，美得让人屏息。', quote: '「烟火会熄灭，但你的笑容不会。」' },
+  { img: 'scene_09_fireworks_together.jpg', title: 'Scene 09 · 花火大会', desc: '山顶之上，漫天烟花绽放，她仰望着天空，眼中映着璀璨的光芒。', quote: '「这一刻的绚烂，不及你万分之一。」' },
+  { img: 'scene_10_writing_poetry.jpg', title: 'Scene 10 · 灯下写诗', desc: '黄昏时分，她在窗前写下诗句，茶香袅袅，樱花瓣飘进窗来。', quote: '「你写的每一行诗，都是我想对你说的话。」' },
+  { img: 'scene_11_autumn_leaves.jpg', title: 'Scene 11 · 秋叶漫步', desc: '金黄的落叶铺满小径，她举起一片枫叶，笑容比阳光还温暖。', quote: '「秋天再冷，有你在就温暖。」' },
+  { img: 'scene_12_snow_day.jpg', title: 'Scene 12 · 初雪之日', desc: '雪花纷飞，她伸出手接住一片雪花，眼中满是孩童般的惊喜。', quote: '「雪是冬天的诗，而你是诗中的韵。」' },
+  { img: 'scene_13_birthday_surprise.jpg', title: 'Scene 13 · 生日惊喜', desc: '教室里挂满了彩带和气球，同学们为她庆祝，她感动得捂住了嘴。', quote: '「你的每一个生日，我都想陪你过。」' },
+  { img: 'scene_14_confession_nervous.jpg', title: 'Scene 14 · 告白前夕', desc: '花园中，她紧握着素描本，脸颊绯红，心跳如鼓。', quote: '「有些话，我练习了千百遍。」' },
+  { img: 'scene_15_poetry_book_gift.jpg', title: 'Scene 15 · 诗集之礼', desc: '她翻开亲手制作的诗集，每一页都夹着干花，写满了心意。', quote: '「这些诗，是我写给你的情书。」' },
+  { img: 'scene_16_tears_of_joy.jpg', title: 'Scene 16 · 喜极而泣', desc: '泪水滑落脸颊，却是幸福的泪水，樱花瓣落在她的发间。', quote: '「原来幸福，真的会流泪。」' },
+  { img: 'scene_17_first_kiss.jpg', title: 'Scene 17 · 星空之吻', desc: '星光下，两人的唇轻轻相触，整个世界都安静了。', quote: '「这一吻，我等了很久。」' },
+  { img: 'scene_18_cherry_blossom_promise.jpg', title: 'Scene 18 · 樱花之约', desc: '满开的樱花树下，两人牵手而立，花瓣如雨般飘落。', quote: '「每年樱花盛开时，我们都要在一起。」' },
+  { img: 'scene_19_graduation_day.jpg', title: 'Scene 19 · 毕业之日', desc: '穿着学士服的她站在校门前，回首望去，眼中满是不舍与希望。', quote: '「毕业不是结束，而是新的开始。」' },
+  { img: 'scene_20_future_together.jpg', title: 'Scene 20 · 携手未来', desc: '花海之中，两人牵手走向朝阳，身后是四季的花朵，前方是光明的未来。', quote: '「我们的故事，才刚刚开始。」' },
+  { img: 'scene_21_morning_greeting.jpg', title: 'Scene 21 · 清晨问候', desc: '清晨的阳光洒在校门口，她微笑着向你挥手，新的一天由此开始。', quote: '「早安，今天也要一起加油哦。」' },
+  { img: 'scene_22_lunch_together.jpg', title: 'Scene 22 · 午餐时光', desc: '天台上，她打开精心准备的便当，阳光下的笑容格外温暖。', quote: '「一起吃吧，这是我亲手做的。」' },
+  { img: 'scene_23_studying.jpg', title: 'Scene 23 · 共同学习', desc: '图书馆里，她认真地做着笔记，偶尔抬头对你露出求助的眼神。', quote: '「这道题...你能教教我吗？」' },
+  { img: 'scene_24_sick_visit.jpg', title: 'Scene 24 · 病中探望', desc: '她躺在床上，看到你来了，眼中闪过惊喜，脸颊微微泛红。', quote: '「能见到你...病好像好了一半。」' },
+  { img: 'scene_25_christmas_eve.jpg', title: 'Scene 25 · 平安夜', desc: '圣诞树前，她递给你一份包装精美的礼物，眼中满是期待。', quote: '「圣诞快乐，这是我的心意。」' },
+  { img: 'scene_26_new_year_shrine.jpg', title: 'Scene 26 · 新年参拜', desc: '神社的绘马前，她虔诚地写下愿望，然后偷偷看了你一眼。', quote: '「希望能和喜欢的人...一直在一起。」' },
+  { img: 'scene_27_valentine_chocolate.jpg', title: 'Scene 27 · 情人节巧克力', desc: '厨房里，她认真地做着巧克力，虽然形状有些奇怪，但充满爱意。', quote: '「虽然不太好看...但是是我的心意。」' },
+  { img: 'scene_28_white_day.jpg', title: 'Scene 28 · 白色情人节', desc: '收到回礼的她，眼中闪烁着泪光，幸福地笑了。', quote: '「我好开心...谢谢你。」' },
+  { img: 'scene_29_park_date.jpg', title: 'Scene 29 · 公园约会', desc: '公园的长椅上，她分享着冰淇淋，阳光洒在她的侧脸。', quote: '「要尝一口吗？」' },
+  { img: 'scene_30_wedding_dream.jpg', title: 'Scene 30 · 梦中婚礼', desc: '梦中的她穿着婚纱，站在花海中，向你伸出手。', quote: '「如果有一天...能和你一起。」' },
+  { img: 'scene_31_rainy_day.jpg', title: 'Scene 31 · 雨天午后', desc: '雨天的窗边，她捧着热茶，望着窗外的雨景， sketchbook放在一旁。', quote: '「下雨天...最适合画画了。」' },
+  { img: 'scene_32_flower_field.jpg', title: 'Scene 32 · 薰衣草花田', desc: '紫色的薰衣草花海中，她回头对你微笑，蝴蝶在身边飞舞。', quote: '「这片花田...像梦境一样美。」' },
+  { img: 'scene_33_baking_together.jpg', title: 'Scene 33 · 一起烘焙', desc: '厨房里，她脸上沾着面粉，却笑得格外开心，饼干香气四溢。', quote: '「一起做的饼干，一定很好吃。」' },
+  { img: 'scene_34_summer_festival.jpg', title: 'Scene 34 · 夏日祭典', desc: '穿着浴衣的她，在祭典的灯火中兴奋地捞着金鱼。', quote: '「捞到了三只！厉害吧？」' },
+  { img: 'scene_35_reading_under_tree.jpg', title: 'Scene 35 · 树下阅读', desc: '秋日的大树下，她安静地读着书，落叶在身边飘落。', quote: '「这本书...借给你看。」' },
+  { img: 'scene_36_night_bridge.jpg', title: 'Scene 36 · 雪夜桥上', desc: '雪花纷飞的夜晚，她站在桥上，望着城市的灯火。', quote: '「此刻的温度，我会永远记得。」' },
+  { img: 'scene_37_art_studio.jpg', title: 'Scene 37 · 画室之中', desc: '画室里，她专注地画着油画，颜料在画布上绽放。', quote: '「这幅画...是我为你画的。」' },
+  { img: 'scene_38_bedroom_diary.jpg', title: 'Scene 38 · 深夜日记', desc: '温暖的卧室里，她在日记本上写下今天的心情，旁边放着热可可。', quote: '「今天也在日记里写满了你。」' },
+  { img: 'scene_39_rooftop_sunset.jpg', title: 'Scene 39 · 毕业黄昏', desc: '毕业前的黄昏，她站在天台上，风吹起她的长发和裙摆。', quote: '「就算毕业了...也不要忘记我。」' },
+  { img: 'scene_40_wedding_chapel.jpg', title: 'Scene 40 · 婚礼殿堂', desc: '教堂里，她穿着洁白的婚纱，手捧白玫瑰，眼中含着幸福的泪水。', quote: '「我愿意...永远和你在一起。」' }
+];
+
+let currentIndex = 0;
+
+function createGallery() {
+  const container = document.getElementById('gallery');
+  SCENES.forEach((scene, i) => {
+    const card = document.createElement('div');
+    card.className = 'scene-card';
+    card.innerHTML = `
+      <div class="scene-image" onclick="openLightbox(${i})">
+        <img src="${scene.img}" alt="${scene.title}" loading="lazy">
+        <div class="scene-number">${String(i+1).padStart(2,'0')}</div>
+      </div>
+      <div class="scene-info">
+        <div class="scene-title">${scene.title}</div>
+        <div class="scene-desc">${scene.desc}</div>
+        <div class="scene-quote">${scene.quote}</div>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+
+  // Intersection Observer for scroll animations
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.scene-card').forEach(card => observer.observe(card));
+}
+
+function openLightbox(index) {
+  currentIndex = index;
+  const lightbox = document.getElementById('lightbox');
+  const img = document.getElementById('lightboxImg');
+  const info = document.getElementById('lightboxInfo');
+  img.src = SCENES[index].img;
+  info.innerHTML = `<h3>${SCENES[index].title}</h3><p>${SCENES[index].desc}</p>`;
+  lightbox.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function navigate(dir) {
+  currentIndex = (currentIndex + dir + SCENES.length) % SCENES.length;
+  const img = document.getElementById('lightboxImg');
+  const info = document.getElementById('lightboxInfo');
+  img.style.opacity = '0';
+  setTimeout(() => {
+    img.src = SCENES[currentIndex].img;
+    info.innerHTML = `<h3>${SCENES[currentIndex].title}</h3><p>${SCENES[currentIndex].desc}</p>`;
+    img.style.opacity = '1';
+  }, 200);
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', (e) => {
+  if (!document.getElementById('lightbox').classList.contains('active')) return;
+  if (e.key === 'Escape') closeLightbox();
+  if (e.key === 'ArrowLeft') navigate(-1);
+  if (e.key === 'ArrowRight') navigate(1);
+});
+
+// Scroll progress
+window.addEventListener('scroll', () => {
+  const scrollTop = window.scrollY;
+  const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+  const progress = (scrollTop / docHeight) * 100;
+  document.getElementById('progressBar').style.width = progress + '%';
+});
+
+// Create falling petals
+function createPetals() {
+  for (let i = 0; i < 20; i++) {
+    const petal = document.createElement('div');
+    petal.className = 'petal';
+    petal.style.left = Math.random() * 100 + 'vw';
+    petal.style.animationDelay = Math.random() * 8 + 's';
+    petal.style.animationDuration = (6 + Math.random() * 6) + 's';
+    petal.style.width = (8 + Math.random() * 8) + 'px';
+    petal.style.height = petal.style.width;
+    document.body.appendChild(petal);
+  }
+}
+
+createGallery();
+createPetals();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>张浩然的告白 - 巴蜀中学竞赛班模拟器</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #1a1005;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  overflow: hidden;
+}
+#video-container {
+  position: relative;
+  width: 100%;
+  max-width: 960px;
+  aspect-ratio: 16/9;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(255, 152, 0, 0.25);
+}
+#cg-frame {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 1.5s ease, transform 8s ease;
+  transform: scale(1.05);
+}
+#cg-frame.active {
+  opacity: 1;
+  transform: scale(1);
+}
+#dialogue-box {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 24px 32px 32px;
+  background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 60%, transparent 100%);
+  min-height: 140px;
+}
+#speaker-name {
+  color: #ffb74d;
+  font-size: 0.9em;
+  font-weight: 600;
+  margin-bottom: 8px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.5s ease;
+}
+#speaker-name.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+#dialogue-text {
+  color: #fff;
+  font-size: 1.15em;
+  line-height: 1.8;
+  min-height: 3.6em;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+#dialogue-text .cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.2em;
+  background: #ffb74d;
+  margin-left: 2px;
+  animation: blink 0.8s infinite;
+  vertical-align: text-bottom;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+#progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #ff9800, #ffb74d);
+  width: 0%;
+  transition: width 0.3s linear;
+}
+#skip-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  padding: 6px 16px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.7);
+  border-radius: 20px;
+  font-size: 0.8em;
+  cursor: pointer;
+  transition: all 0.3s;
+  z-index: 10;
+}
+#skip-btn:hover {
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+}
+#start-screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #2a1a0a, #1a1005);
+  z-index: 20;
+  transition: opacity 1s ease;
+}
+#start-screen.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+#start-screen h1 {
+  color: #ffb74d;
+  font-size: 1.8em;
+  font-weight: 300;
+  letter-spacing: 0.15em;
+  margin-bottom: 8px;
+}
+#start-screen .subtitle {
+  color: rgba(255,255,255,0.5);
+  font-size: 0.9em;
+  margin-bottom: 32px;
+}
+#start-btn {
+  padding: 12px 40px;
+  background: linear-gradient(135deg, #ff9800, #ffb74d);
+  border: none;
+  color: #fff;
+  border-radius: 30px;
+  font-size: 1em;
+  cursor: pointer;
+  transition: all 0.3s;
+  letter-spacing: 0.1em;
+}
+#start-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(255, 152, 0, 0.4);
+}
+#end-screen {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.9);
+  z-index: 15;
+}
+#end-screen.show {
+  display: flex;
+  animation: fadeIn 1s ease;
+}
+#end-screen h2 {
+  color: #ffb74d;
+  font-size: 2em;
+  font-weight: 300;
+  margin-bottom: 16px;
+}
+#end-screen p {
+  color: rgba(255,255,255,0.6);
+  font-size: 1em;
+  margin-bottom: 24px;
+}
+#replay-btn {
+  padding: 10px 32px;
+  background: transparent;
+  border: 1px solid rgba(255, 183, 77, 0.4);
+  color: #ffb74d;
+  border-radius: 24px;
+  font-size: 0.9em;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+#replay-btn:hover {
+  background: rgba(255, 183, 77, 0.1);
+  border-color: #ffb74d;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.sweatdrop {
+  position: absolute;
+  width: 8px;
+  height: 12px;
+  background: linear-gradient(to bottom, #81d4fa, #4fc3f7);
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  pointer-events: none;
+  opacity: 0.5;
+  animation: sweatFall 4s infinite ease-in;
+}
+@keyframes sweatFall {
+  0% { transform: translateY(0); opacity: 0.5; }
+  100% { transform: translateY(60px); opacity: 0; }
+}
+</style>
+</head>
+<body>
+
+<div id="video-container">
+  <img id="cg-frame" src="" alt="CG Scene">
+  
+  <div id="dialogue-box">
+    <div id="speaker-name"></div>
+    <div id="dialogue-text"><span class="cursor"></span></div>
+  </div>
+  
+  <div id="progress-bar"></div>
+  <button id="skip-btn" onclick="skipAnimation()">跳过</button>
+  
+  <div id="start-screen">
+    <h1>球场之外</h1>
+    <div class="subtitle">张浩然 · 特殊CG动画</div>
+    <button id="start-btn" onclick="startAnimation()">开始播放</button>
+  </div>
+  
+  <div id="end-screen">
+    <h2>告白完成</h2>
+    <p>这段回忆已珍藏在心底</p>
+    <button id="replay-btn" onclick="replayAnimation()">重新播放</button>
+  </div>
+</div>
+
+<script>
+const FRAMES = [
+  {
+    img: 'frame_01_gym.jpg',
+    speaker: '张浩然',
+    text: '（篮球撞击地面的声音在空旷的体育馆回响）\n我练了一下午的三分球...但手一直在抖。',
+    duration: 4000
+  },
+  {
+    img: 'frame_02_determined.jpg',
+    speaker: '张浩然',
+    text: '在球场上，我从不会紧张。\n但一想到要对你说话...\n我的心跳比打完加时赛还快。',
+    duration: 4500
+  },
+  {
+    img: 'frame_03_confess.jpg',
+    speaker: '张浩然',
+    text: '这个篮球上，我写了你的名字。\n每次投篮，我都在想...\n如果能投中你的心，该有多好。',
+    duration: 5000
+  },
+  {
+    img: 'frame_04_jersey.jpg',
+    speaker: '张浩然',
+    text: '我的球衣号码是23号...\n但在我心里，唯一的号码是你的学号。\n这是我写过最肉麻的话了，哈哈...',
+    duration: 5000
+  },
+  {
+    img: 'frame_05_together.jpg',
+    speaker: '张浩然',
+    text: '我不知道未来有多少场比赛等着我。\n但我知道，只要有你在场边，\n每一次投篮都有了意义。\n所以...愿意做我永远的观众吗？',
+    duration: 6000
+  }
+];
+
+let currentFrame = 0;
+let isPlaying = false;
+let typeInterval = null;
+let frameTimeout = null;
+
+function startAnimation() {
+  document.getElementById('start-screen').classList.add('hidden');
+  isPlaying = true;
+  currentFrame = 0;
+  playFrame(0);
+}
+
+function playFrame(index) {
+  if (index >= FRAMES.length) {
+    showEndScreen();
+    return;
+  }
+  
+  currentFrame = index;
+  const frame = FRAMES[index];
+  const img = document.getElementById('cg-frame');
+  const nameEl = document.getElementById('speaker-name');
+  const textEl = document.getElementById('dialogue-text');
+  const progressBar = document.getElementById('progress-bar');
+  
+  img.classList.remove('active');
+  setTimeout(() => {
+    img.src = frame.img;
+    img.classList.add('active');
+  }, 300);
+  
+  nameEl.textContent = '【' + frame.speaker + '】';
+  nameEl.classList.remove('show');
+  setTimeout(() => nameEl.classList.add('show'), 500);
+  
+  textEl.innerHTML = '<span class="cursor"></span>';
+  let charIndex = 0;
+  const text = frame.text;
+  
+  if (typeInterval) clearInterval(typeInterval);
+  typeInterval = setInterval(() => {
+    if (charIndex < text.length) {
+      const char = text[charIndex];
+      if (char === '\n') {
+        textEl.insertBefore(document.createElement('br'), textEl.lastElementChild);
+      } else {
+        const span = document.createElement('span');
+        span.textContent = char;
+        span.style.opacity = '0';
+        span.style.transition = 'opacity 0.1s';
+        textEl.insertBefore(span, textEl.lastElementChild);
+        setTimeout(() => span.style.opacity = '1', 10);
+      }
+      charIndex++;
+    } else {
+      clearInterval(typeInterval);
+    }
+  }, 45);
+  
+  progressBar.style.width = '0%';
+  setTimeout(() => {
+    progressBar.style.transition = 'width ' + frame.duration + 'ms linear';
+    progressBar.style.width = '100%';
+  }, 100);
+  
+  frameTimeout = setTimeout(() => {
+    playFrame(index + 1);
+  }, frame.duration);
+}
+
+function skipAnimation() {
+  if (!isPlaying) return;
+  clearTimeout(frameTimeout);
+  clearInterval(typeInterval);
+  
+  if (currentFrame < FRAMES.length - 1) {
+    playFrame(currentFrame + 1);
+  } else {
+    showEndScreen();
+  }
+}
+
+function showEndScreen() {
+  isPlaying = false;
+  document.getElementById('end-screen').classList.add('show');
+  document.getElementById('progress-bar').style.width = '100%';
+}
+
+function replayAnimation() {
+  document.getElementById('end-screen').classList.remove('show');
+  document.getElementById('progress-bar').style.width = '0%';
+  currentFrame = 0;
+  isPlaying = true;
+  playFrame(0);
+}
+
+function createSweatdrops() {
+  const container = document.getElementById('video-container');
+  for (let i = 0; i < 10; i++) {
+    const s = document.createElement('div');
+    s.className = 'sweatdrop';
+    s.style.left = (20 + Math.random() * 60) + '%';
+    s.style.top = (20 + Math.random() * 40) + '%';
+    s.style.animationDelay = Math.random() * 4 + 's';
+    s.style.animationDuration = (3 + Math.random() * 2) + 's';
+    container.appendChild(s);
+  }
+}
+createSweatdrops();
+</script>
+
+</body>
+</html>

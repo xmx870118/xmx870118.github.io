@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>刘子轩的告白 - 巴蜀中学竞赛班模拟器</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0a0a1a;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  overflow: hidden;
+}
+#video-container {
+  position: relative;
+  width: 100%;
+  max-width: 960px;
+  aspect-ratio: 16/9;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(102, 126, 234, 0.3);
+}
+#cg-frame {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 1.5s ease, transform 8s ease;
+  transform: scale(1.05);
+}
+#cg-frame.active {
+  opacity: 1;
+  transform: scale(1);
+}
+#dialogue-box {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 24px 32px 32px;
+  background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 60%, transparent 100%);
+  min-height: 140px;
+}
+#speaker-name {
+  color: #a0b0ff;
+  font-size: 0.9em;
+  font-weight: 600;
+  margin-bottom: 8px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.5s ease;
+}
+#speaker-name.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+#dialogue-text {
+  color: #fff;
+  font-size: 1.15em;
+  line-height: 1.8;
+  min-height: 3.6em;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+#dialogue-text .cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.2em;
+  background: #a0b0ff;
+  margin-left: 2px;
+  animation: blink 0.8s infinite;
+  vertical-align: text-bottom;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+#progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  width: 0%;
+  transition: width 0.3s linear;
+}
+#skip-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  padding: 6px 16px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.7);
+  border-radius: 20px;
+  font-size: 0.8em;
+  cursor: pointer;
+  transition: all 0.3s;
+  z-index: 10;
+}
+#skip-btn:hover {
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+}
+#start-screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1a1a3e, #0a0a1a);
+  z-index: 20;
+  transition: opacity 1s ease;
+}
+#start-screen.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+#start-screen h1 {
+  color: #a0b0ff;
+  font-size: 1.8em;
+  font-weight: 300;
+  letter-spacing: 0.15em;
+  margin-bottom: 8px;
+}
+#start-screen .subtitle {
+  color: rgba(255,255,255,0.5);
+  font-size: 0.9em;
+  margin-bottom: 32px;
+}
+#start-btn {
+  padding: 12px 40px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border: none;
+  color: #fff;
+  border-radius: 30px;
+  font-size: 1em;
+  cursor: pointer;
+  transition: all 0.3s;
+  letter-spacing: 0.1em;
+}
+#start-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+}
+#end-screen {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.9);
+  z-index: 15;
+}
+#end-screen.show {
+  display: flex;
+  animation: fadeIn 1s ease;
+}
+#end-screen h2 {
+  color: #a0b0ff;
+  font-size: 2em;
+  font-weight: 300;
+  margin-bottom: 16px;
+}
+#end-screen p {
+  color: rgba(255,255,255,0.6);
+  font-size: 1em;
+  margin-bottom: 24px;
+}
+#replay-btn {
+  padding: 10px 32px;
+  background: transparent;
+  border: 1px solid rgba(160, 176, 255, 0.4);
+  color: #a0b0ff;
+  border-radius: 24px;
+  font-size: 0.9em;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+#replay-btn:hover {
+  background: rgba(160, 176, 255, 0.1);
+  border-color: #a0b0ff;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: rgba(160, 176, 255, 0.6);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: float 6s infinite ease-in-out;
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.6; }
+  50% { transform: translateY(-30px) scale(1.5); opacity: 0.3; }
+}
+</style>
+</head>
+<body>
+
+<div id="video-container">
+  <img id="cg-frame" src="" alt="CG Scene">
+  
+  <div id="dialogue-box">
+    <div id="speaker-name"></div>
+    <div id="dialogue-text"><span class="cursor"></span></div>
+  </div>
+  
+  <div id="progress-bar"></div>
+  <button id="skip-btn" onclick="skipAnimation()">跳过</button>
+  
+  <div id="start-screen">
+    <h1>代码里的心跳</h1>
+    <div class="subtitle">刘子轩 · 特殊CG动画</div>
+    <button id="start-btn" onclick="startAnimation()">开始播放</button>
+  </div>
+  
+  <div id="end-screen">
+    <h2>💕 告白完成</h2>
+    <p>这段回忆已珍藏在心底</p>
+    <button id="replay-btn" onclick="replayAnimation()">重新播放</button>
+  </div>
+</div>
+
+<script>
+const FRAMES = [
+  {
+    img: 'frame_01_nervous.jpg',
+    speaker: '刘子轩',
+    text: '（敲键盘的声音在空荡的机房里回响）\n我已经...在这里写了三个小时的代码了。',
+    duration: 4000
+  },
+  {
+    img: 'frame_02_determined.jpg',
+    speaker: '刘子轩',
+    text: '每次想要开口，话到嘴边又咽了回去。\n但是今晚...我决定不再逃避了。',
+    duration: 4500
+  },
+  {
+    img: 'frame_03_heartcode.jpg',
+    speaker: '刘子轩',
+    text: '你看，这是我写给你的程序。\n每一行代码，都是我想对你说的话。\n这个心形...是我能想到最浪漫的算法。',
+    duration: 5000
+  },
+  {
+    img: 'frame_04_smile.jpg',
+    speaker: '刘子轩',
+    text: '这个U盘里，存着我亲手做的电路。\n上面的LED灯，只会为你一个人亮起。\n就像我的心...也只为你一个人跳动。',
+    duration: 5000
+  },
+  {
+    img: 'frame_05_together.jpg',
+    speaker: '刘子轩',
+    text: '我不知道未来会怎样。\n但我知道，只要有你在身边，\n每一行代码都有了意义，每一个bug都变得可爱。\n所以...愿意和我一起，写下属于我们的故事吗？',
+    duration: 6000
+  }
+];
+
+let currentFrame = 0;
+let isPlaying = false;
+let typeInterval = null;
+let frameTimeout = null;
+
+function startAnimation() {
+  document.getElementById('start-screen').classList.add('hidden');
+  isPlaying = true;
+  currentFrame = 0;
+  playFrame(0);
+}
+
+function playFrame(index) {
+  if (index >= FRAMES.length) {
+    showEndScreen();
+    return;
+  }
+  
+  currentFrame = index;
+  const frame = FRAMES[index];
+  const img = document.getElementById('cg-frame');
+  const nameEl = document.getElementById('speaker-name');
+  const textEl = document.getElementById('dialogue-text');
+  const progressBar = document.getElementById('progress-bar');
+  
+  // 切换图片
+  img.classList.remove('active');
+  setTimeout(() => {
+    img.src = frame.img;
+    img.classList.add('active');
+  }, 300);
+  
+  // 显示说话人
+  nameEl.textContent = '【' + frame.speaker + '】';
+  nameEl.classList.remove('show');
+  setTimeout(() => nameEl.classList.add('show'), 500);
+  
+  // 打字机效果
+  textEl.innerHTML = '<span class="cursor"></span>';
+  let charIndex = 0;
+  const text = frame.text;
+  
+  if (typeInterval) clearInterval(typeInterval);
+  typeInterval = setInterval(() => {
+    if (charIndex < text.length) {
+      const char = text[charIndex];
+      if (char === '\n') {
+        textEl.insertBefore(document.createElement('br'), textEl.lastElementChild);
+      } else {
+        const span = document.createElement('span');
+        span.textContent = char;
+        span.style.opacity = '0';
+        span.style.transition = 'opacity 0.1s';
+        textEl.insertBefore(span, textEl.lastElementChild);
+        setTimeout(() => span.style.opacity = '1', 10);
+      }
+      charIndex++;
+    } else {
+      clearInterval(typeInterval);
+    }
+  }, 45);
+  
+  // 进度条
+  progressBar.style.width = '0%';
+  setTimeout(() => {
+    progressBar.style.transition = 'width ' + frame.duration + 'ms linear';
+    progressBar.style.width = '100%';
+  }, 100);
+  
+  // 下一帧
+  frameTimeout = setTimeout(() => {
+    playFrame(index + 1);
+  }, frame.duration);
+}
+
+function skipAnimation() {
+  if (!isPlaying) return;
+  clearTimeout(frameTimeout);
+  clearInterval(typeInterval);
+  
+  if (currentFrame < FRAMES.length - 1) {
+    playFrame(currentFrame + 1);
+  } else {
+    showEndScreen();
+  }
+}
+
+function showEndScreen() {
+  isPlaying = false;
+  document.getElementById('end-screen').classList.add('show');
+  document.getElementById('progress-bar').style.width = '100%';
+}
+
+function replayAnimation() {
+  document.getElementById('end-screen').classList.remove('show');
+  document.getElementById('progress-bar').style.width = '0%';
+  currentFrame = 0;
+  isPlaying = true;
+  playFrame(0);
+}
+
+// 添加粒子效果
+function createParticles() {
+  const container = document.getElementById('video-container');
+  for (let i = 0; i < 15; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.top = Math.random() * 100 + '%';
+    p.style.animationDelay = Math.random() * 6 + 's';
+    p.style.animationDuration = (4 + Math.random() * 4) + 's';
+    container.appendChild(p);
+  }
+}
+createParticles();
+</script>
+
+</body>
+</html>
