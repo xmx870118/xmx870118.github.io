@@ -1,0 +1,1934 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>巴蜀中学竞赛班模拟器</title>
+    <style>
+        :root {
+            --primary: #1e3a5f;
+            --secondary: #2c5282;
+            --accent: #d69e2e;
+            --success: #38a169;
+            --danger: #e53e3e;
+            --warning: #dd6b20;
+            --bg: #f7fafc;
+            --card: #ffffff;
+            --text: #2d3748;
+            --border: #e2e8f0;
+            --bs-red: #c53030;
+        }
+        [data-theme="dark"] {
+            --primary: #569cd6;
+            --secondary: #4ec9b0;
+            --accent: #dcdcaa;
+            --success: #6a9955;
+            --danger: #f44747;
+            --warning: #ce9178;
+            --bg: #1e1e1e;
+            --card: #252526;
+            --text: #d4d4d4;
+            --border: #3e3e42;
+            --bs-red: #f44747;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; }
+        body { background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+
+        /* ===== 地球Online 载入动画 ===== */
+        #loader-screen { position: fixed; inset: 0; background: #0a0a0f; z-index: 99999; display: flex; flex-direction: column; justify-content: center; align-items: center; font-family: 'Courier New', 'Microsoft YaHei', monospace; transition: opacity .8s ease, visibility .8s ease; }
+        #loader-screen.done { opacity: 0; visibility: hidden; pointer-events: none; }
+        .loader-scanline { position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,136,.03) 2px, rgba(0,255,136,.03) 4px); animation: scanMove 8s linear infinite; }
+        @keyframes scanMove { 0% { background-position: 0 0; } 100% { background-position: 0 100vh; } }
+        .loader-grid { position: absolute; inset: 0; pointer-events: none; opacity: .06; background-image: linear-gradient(rgba(0,255,136,.3) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,136,.3) 1px, transparent 1px); background-size: 50px 50px; }
+        .loader-container { width: 90%; max-width: 640px; position: relative; z-index: 2; }
+        .loader-header { text-align: center; margin-bottom: 30px; }
+        .loader-header h2 { font-size: 2.2em; color: #00ff88; letter-spacing: .15em; text-shadow: 0 0 20px rgba(0,255,136,.4); margin-bottom: 6px; font-weight: 400; }
+        .loader-header .ver { color: #00ff88; opacity: .6; font-size: .8em; letter-spacing: .3em; }
+        .loader-earth { width: 80px; height: 80px; margin: 0 auto 24px; border: 2px solid rgba(0,255,136,.3); border-radius: 50%; position: relative; animation: earthPulse 2s ease-in-out infinite; }
+        .loader-earth::before { content: ''; position: absolute; inset: -6px; border: 1px solid rgba(0,255,136,.15); border-radius: 50%; animation: earthRing 3s linear infinite; }
+        .loader-earth::after { content: '🌐'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 2em; }
+        @keyframes earthPulse { 0%, 100% { box-shadow: 0 0 10px rgba(0,255,136,.2); } 50% { box-shadow: 0 0 30px rgba(0,255,136,.5); } }
+        @keyframes earthRing { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.4); opacity: 0; } }
+        .loader-terminal { background: rgba(0,20,10,.6); border: 1px solid rgba(0,255,136,.2); border-radius: 6px; padding: 14px 16px; margin-bottom: 20px; min-height: 140px; max-height: 180px; overflow: hidden; font-size: .78em; line-height: 1.7; color: #00ff88; }
+        .loader-terminal .log-line { opacity: 0; animation: logFadeIn .2s ease forwards; }
+        @keyframes logFadeIn { to { opacity: 1; } }
+        .loader-terminal .log-ok { color: #00ff88; }
+        .loader-terminal .log-warn { color: #ffaa00; }
+        .loader-terminal .log-info { color: #00ccff; }
+        .loader-terminal .log-sys { color: #888; }
+        .loader-progress-wrap { margin-bottom: 10px; }
+        .loader-progress-bar { height: 4px; background: rgba(0,255,136,.1); border-radius: 2px; overflow: hidden; }
+        .loader-progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #00ff88, #00cc66); box-shadow: 0 0 10px rgba(0,255,136,.5); transition: width .15s linear; }
+        .loader-progress-text { display: flex; justify-content: space-between; margin-top: 8px; font-size: .72em; color: rgba(0,255,136,.6); letter-spacing: .1em; }
+        .loader-footer { text-align: center; margin-top: 16px; font-size: .7em; color: rgba(0,255,136,.3); letter-spacing: .2em; }
+
+        /* 启动画面 */
+        #start-screen {
+            position: fixed; inset: 0; background: var(--card);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 10000; color: var(--text); text-align: center; padding: 40px;
+        }
+        #start-screen h1 { font-size: 3em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        #start-screen .subtitle { font-size: 1.2em; opacity: 0.9; margin-bottom: 30px; }
+        #start-screen .story {
+            max-width: 700px; background: rgba(255,255,255,0.1); padding: 25px; border-radius: 12px;
+            backdrop-filter: blur(10px); margin-bottom: 30px; line-height: 1.8; font-size: 0.95em;
+        }
+        .mode-select { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
+        .mode-btn {
+            background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.3);
+            color: white; padding: 20px 30px; border-radius: 12px; cursor: pointer;
+            transition: all 0.3s; min-width: 220px;
+        }
+        .mode-btn:hover { background: rgba(255,255,255,0.25); transform: translateY(-3px); }
+        .mode-btn h3 { margin-bottom: 8px; font-size: 1.3em; }
+        .mode-btn p { font-size: 0.85em; opacity: 0.8; }
+        
+        /* 顶部导航 */
+        header {
+            height: 65px; background: var(--card); border-bottom: 3px solid var(--bs-red);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); position: sticky; top: 0; z-index: 100;
+        }
+        .logo { font-size: 1.3em; font-weight: bold; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+        .stat-bar { display: flex; gap: 12px; align-items: center; }
+        .stat-item {
+            background: #f8fafc; padding: 6px 14px; border-radius: 8px;
+            border: 1px solid var(--border); font-size: 0.9em; font-weight: bold;
+        }
+        .stat-item b { color: var(--secondary); }
+        .sprint-tag {
+            background: var(--danger); color: white; padding: 4px 12px;
+            border-radius: 6px; font-size: 0.8em; animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+        
+        /* 主体布局 */
+        .app-body {
+            display: grid; grid-template-columns: 300px 1fr 300px; gap: 15px;
+            padding: 15px; max-width: 1600px; margin: 0 auto;
+        }
+        
+        /* 左侧面板 */
+        .sidebar {
+            background: var(--card); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border: 1px solid var(--border); overflow: hidden; display: flex; flex-direction: column;
+        }
+        .nav-tabs { display: flex; background: var(--primary); }
+        .tab-btn {
+            flex: 1; padding: 12px; background: transparent; color: rgba(255,255,255,0.7);
+            font-weight: bold; border: none; cursor: pointer; font-size: 0.9em;
+        }
+        .tab-btn.active { background: var(--card); color: var(--primary); }
+        .panel-content { flex: 1; overflow-y: auto; padding: 12px; display: none; max-height: calc(100vh - 180px); }
+        .panel-content.active { display: block; }
+        
+        .action-btn {
+            width: 100%; text-align: left; padding: 12px; border: 1px solid var(--border);
+            border-radius: 8px; background: white; margin-bottom: 8px; cursor: pointer;
+            position: relative; transition: all 0.2s;
+        }
+        .action-btn:hover:not(:disabled) { border-color: var(--secondary); transform: translateY(-2px); box-shadow: 0 4px 8px rgba(44,82,130,0.12); }
+        .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .action-btn h4 { margin: 0; color: var(--primary); font-size: 1em; display: flex; align-items: center; gap: 6px; }
+        .action-btn p { margin: 5px 0 0 0; font-size: 0.78em; color: #718096; line-height: 1.4; }
+        .cost-tag {
+            position: absolute; right: 10px; top: 10px; font-size: 0.7em;
+            background: #fef3c7; color: #b45309; padding: 2px 8px; border-radius: 4px; font-weight: bold;
+        }
+        
+        .sub-menu { display: none; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+        .sub-menu.active { display: grid; }
+        .mini-btn {
+            padding: 8px; font-size: 0.8em; border: 1px solid var(--border);
+            border-radius: 6px; background: white; cursor: pointer; font-weight: bold;
+        }
+        .mini-btn:hover { background: var(--secondary); color: white; }
+        
+        /* 中间主视图 */
+        .main-view {
+            background: var(--card); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border: 1px solid var(--border); padding: 15px; overflow-y: auto; max-height: calc(100vh - 100px);
+        }
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+        
+        .stu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+        .stu-card {
+            border: 1px solid var(--border); border-radius: 10px; padding: 14px;
+            position: relative; border-top: 3px solid var(--secondary); background: white;
+        }
+        .stu-card.sick { border-top-color: var(--danger); opacity: 0.85; }
+        .stu-card.graduated { border-top-color: var(--success); }
+        .stu-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .stu-name { font-weight: bold; font-size: 1.1em; color: var(--primary); }
+        .stu-phase { font-size: 0.75em; color: var(--accent); font-weight: bold; }
+        .tag-pool { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+        .tag {
+            font-size: 0.7em; padding: 2px 8px; border-radius: 4px; font-weight: bold;
+        }
+        .tag-pos { background: #c6f6d5; color: #22543d; }
+        .tag-neg { background: #fed7d7; color: #742a2a; }
+        .tag-neu { background: #e2e8f0; color: #4a5568; }
+        
+        .sub-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
+        .sub-box {
+            text-align: center; padding: 6px; border-radius: 6px; background: #f8fafc;
+            border: 1px solid var(--border);
+        }
+        .sub-label { font-size: 0.7em; color: #718096; display: block; }
+        .sub-val { font-size: 0.9em; font-weight: bold; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 2px; }
+        
+        .stress-bar { height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; margin-top: 6px; }
+        .stress-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+        
+        /* 右侧面板 */
+        .rightbar {
+            background: var(--card); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border: 1px solid var(--border); padding: 15px; display: flex; flex-direction: column;
+            max-height: calc(100vh - 100px);
+        }
+        .rightbar h3 { font-size: 1em; color: var(--primary); margin-bottom: 10px; border-bottom: 2px solid var(--accent); padding-bottom: 6px; }
+        .log-area {
+            flex: 1; overflow-y: auto; font-size: 0.82em; line-height: 1.6;
+            max-height: 300px; padding-right: 5px;
+        }
+        .log-entry { margin-bottom: 6px; padding: 6px; background: #f8fafc; border-radius: 6px; border-left: 3px solid var(--secondary); }
+        .log-eff { color: var(--accent); font-weight: bold; margin-left: 6px; }
+        
+        .facility-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px;
+        }
+        .facility-item h4 { margin: 0; font-size: 0.9em; color: var(--primary); }
+        .facility-item p { margin: 3px 0 0 0; font-size: 0.75em; color: #718096; }
+        
+        /* 模态框 */
+        .overlay {
+            position: fixed; inset: 0; background: rgba(15,23,42,0.85);
+            display: flex; justify-content: center; align-items: center; z-index: 9999;
+            backdrop-filter: blur(6px);
+        }
+        .modal-box {
+            background: var(--card); border-radius: 16px; padding: 25px;
+            width: 90%; max-width: 700px; max-height: 85vh; overflow-y: auto;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        }
+        .modal-title { font-size: 1.5em; color: var(--primary); margin-bottom: 15px; }
+        .hidden { display: none !important; }
+        
+        /* 考试表格 */
+        .exam-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .exam-table th, .exam-table td { padding: 8px; text-align: center; border: 1px solid var(--border); font-size: 0.85em; }
+        .exam-table th { background: var(--primary); color: white; }
+        .exam-table td { background: white; }
+        .pop { animation: popIn 0.3s ease; }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        
+        .choice-btns { display: flex; gap: 12px; margin-top: 15px; }
+        .choice-btn { flex: 1; padding: 14px; border: 2px solid var(--border); border-radius: 10px; background: white; cursor: pointer; font-weight: bold; transition: all 0.2s; }
+        .choice-btn:hover { border-color: var(--secondary); background: #ebf8ff; }
+        
+        .ending-card { text-align: center; padding: 30px; }
+        .ending-card h2 { color: var(--primary); margin-bottom: 15px; }
+        .cengfan-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin: 20px 0; }
+        .cengfan-card {
+            background: #f8fafc; padding: 15px; border-radius: 10px;
+            border: 2px solid var(--border); text-align: center;
+        }
+        
+        .phase-indicator {
+            display: inline-block; padding: 4px 12px; border-radius: 6px;
+            font-size: 0.8em; font-weight: bold; margin-bottom: 10px;
+        }
+        .phase-junior { background: #c6f6d5; color: #22543d; }
+        .phase-senior { background: #bee3f8; color: #2a4365; }
+        .phase-oi { background: #fef3c7; color: #744210; }
+        
+        .next-turn-btn {
+            width: 100%; padding: 14px; background: var(--bs-red); color: white;
+            border: none; border-radius: 8px; font-size: 1.1em; font-weight: bold;
+            cursor: pointer; margin-top: 10px; transition: all 0.2s;
+        }
+        .next-turn-btn:hover { background: #9b2c2c; transform: translateY(-2px); }
+        
+        .archive-tabs { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+        .arc-tab { padding: 6px 12px; border-radius: 6px; background: #f8fafc; cursor: pointer; font-size: 0.85em; border: 1px solid var(--border); }
+        .arc-tab.active { background: var(--secondary); color: white; }
+        
+        .chart-container { height: 120px; background: #f8fafc; border-radius: 8px; padding: 10px; margin-bottom: 10px; }
+        
+        @media (max-width: 1200px) {
+            .app-body { grid-template-columns: 1fr; }
+            .sidebar, .rightbar { max-height: none; }
+        }
+        .auth-area{margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.3);width:100%;max-width:400px}
+        .auth-area h4{font-size:.82em;color:rgba(255,255,255,0.7);margin-bottom:10px;font-weight:400}
+        .auth-row{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;justify-content:center}
+        .auth-row input{padding:8px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:#fff;font-size:.82em;outline:none;flex:1;min-width:120px}
+        .auth-row input::placeholder{color:rgba(255,255,255,0.5)}
+        .auth-btn{padding:8px 16px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.15);color:#fff;cursor:pointer;font-size:.78em;transition:.15s}
+        .auth-btn:hover{border-color:rgba(255,255,255,0.6);background:rgba(255,255,255,0.25)}
+        .auth-btn.primary{background:rgba(255,255,255,0.9);color:#1e3a5f;border-color:rgba(255,255,255,0.9)}
+        .auth-btn.primary:hover{background:#fff}
+        .auth-info{font-size:.78em;color:rgba(255,255,255,0.8);margin-top:6px}
+        .save-bar{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;justify-content:center}
+        .save-btn{padding:6px 14px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.15);color:#fff;cursor:pointer;font-size:.72em;transition:.15s}
+        .save-btn:hover{border-color:rgba(255,255,255,0.6);background:rgba(255,255,255,0.25)}
+        .save-btn.primary{background:rgba(255,255,255,0.9);color:#1e3a5f;border-color:rgba(255,255,255,0.9)}
+        .theme-toggle{position:fixed;top:12px;right:12px;z-index:100000;width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:.2s}
+        .theme-toggle:hover{transform:scale(1.1)}
+    </style>
+</head>
+<body>
+<button class="theme-toggle" id="theme-btn" onclick="toggleTheme()" title="切换主题">🌙</button>
+
+<!-- ===== 地球Online 载入动画 ===== -->
+<div id="loader-screen">
+  <div class="loader-scanline"></div>
+  <div class="loader-grid"></div>
+  <div class="loader-container">
+    <div class="loader-header">
+      <h2>🌍 EARTH ONLINE</h2>
+      <div class="ver">SIMULATION ENGINE v4.2.0</div>
+    </div>
+    <div class="loader-earth"></div>
+    <div class="loader-terminal" id="loader-terminal"></div>
+    <div class="loader-progress-wrap">
+      <div class="loader-progress-bar"><div class="loader-progress-fill" id="loader-progress-fill"></div></div>
+      <div class="loader-progress-text">
+        <span id="loader-status">[INIT]</span>
+        <span id="loader-percent">0%</span>
+      </div>
+    </div>
+    <div class="loader-footer">BASHU SECONDARY SCHOOL · COMPETITION CLASS SIMULATOR</div>
+  </div>
+</div>
+
+<!-- 启动画面 -->
+<div id="start-screen">
+    <h1>🏫 巴蜀中学竞赛班模拟器</h1>
+    <p class="subtitle">从初中到高三，六年的竞赛之路</p>
+    <div class="story">
+        <p>2022年9月，你成为了重庆巴蜀中学一名竞赛班的班主任。</p>
+        <p>你的班上有6个充满潜力的孩子，他们怀揣着对信息学竞赛的热爱。</p>
+        <p>从初一的C++入门，到初三的省选冲刺；从高中的联赛拼搏，到NOI的金牌梦想。</p>
+        <p>六年间，你要帮助他们平衡竞赛与文化课，管理压力与状态，</p>
+        <p>最终有人保送清北，有人高考圆梦，也有人黯然离场……</p>
+        <p style="margin-top:10px;color:var(--accent);font-weight:bold;">这一切，都取决于你的决策。</p>
+    </div>
+    <div class="mode-select">
+        <button class="mode-btn" onclick="Game.start('normal')">
+            <h3>📚 标准模式</h3>
+            <p>初始资金 ¥10000<br>学生基础正常，标准成长曲线</p>
+        </button>
+        <button class="mode-btn" onclick="Game.start('hard')">
+            <h3>🔥 地狱模式</h3>
+            <p>初始资金 ¥3000<br>学习能力-20%，压力增长+30%</p>
+        </button>
+    </div>
+    <p style="font-size:0.85em;opacity:0.7;margin-top:15px;">为6名学生命名（留空使用默认）：</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:10px;">
+        <input type="text" id="name-0" placeholder="张思远" style="padding:8px 12px;border-radius:6px;border:none;width:120px;">
+        <input type="text" id="name-1" placeholder="李梦琪" style="padding:8px 12px;border-radius:6px;border:none;width:120px;">
+        <input type="text" id="name-2" placeholder="王浩然" style="padding:8px 12px;border-radius:6px;border:none;width:120px;">
+        <input type="text" id="name-3" placeholder="陈雨桐" style="padding:8px 12px;border-radius:6px;border:none;width:120px;">
+        <input type="text" id="name-4" placeholder="刘子轩" style="padding:8px 12px;border-radius:6px;border:none;width:120px;">
+        <input type="text" id="name-5" placeholder="赵欣怡" style="padding:8px 12px;border-radius:6px;border:none;width:120px;">
+    </div>
+    <div class="auth-area" id="auth-area">
+        <h4>账户</h4>
+        <div id="auth-guest">
+            <div class="auth-row">
+                <input type="text" id="auth-user" placeholder="用户名">
+                <input type="password" id="auth-pass" placeholder="密码">
+            </div>
+            <div class="auth-row">
+                <button class="auth-btn primary" onclick="authRegister()">注册</button>
+                <button class="auth-btn primary" onclick="authLogin()">登录</button>
+            </div>
+        </div>
+        <div id="auth-logged" class="hidden">
+            <div class="auth-info">👤 <b id="auth-username"></b></div>
+            <div class="save-bar">
+                <button class="save-btn" onclick="saveGame()">💾 保存进度</button>
+                <button class="save-btn" onclick="loadGame()">📂 读取进度</button>
+                <button class="save-btn" onclick="authLogout()">退出</button>
+            </div>
+            <div class="auth-info" id="save-info" style="margin-top:4px"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 主界面 -->
+<div id="main-app" class="hidden">
+    <header>
+        <div class="logo">🏫 巴蜀中学竞赛班</div>
+        <div class="stat-bar">
+            <span id="sprint-tag" class="sprint-tag hidden">🔥 冲刺阶段</span>
+            <span class="stat-item">📅 <b id="ui-time">2022年 9月</b></span>
+            <span class="stat-item">📊 <b id="ui-phase">初一上学期</b></span>
+            <span class="stat-item">💰 ¥<b id="ui-money">10000</b></span>
+            <span class="stat-item">⚡ AP: <b id="ui-ap">3</b>/<b id="ui-maxap">3</b></span>
+            <span class="stat-item">🌤️ <b id="ui-weather">晴朗</b></span>
+            <div style="position:relative">
+                <button class="music-btn" id="music-toggle" onclick="toggleMusicPanel(event)" style="background:none;border:1px solid rgba(255,255,255,0.3);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:0.85em;color:white;transition:.2s;display:flex;align-items:center;gap:4px">🎵 音乐</button>
+                <div class="music-panel" id="music-panel" style="position:absolute;top:100%;right:0;background:white;border:1px solid #e2e8f0;border-radius:8px;padding:10px;width:280px;box-shadow:0 4px 16px rgba(0,0,0,.08);z-index:200;display:none">
+                    <h4 style="font-size:.82em;color:#2d3748;margin-bottom:8px;font-weight:500">主题曲</h4>
+                    <div class="music-list" id="music-list"></div>
+                    <div style="display:flex;align-items:center;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid #f0f0f0">
+                        <label style="font-size:.72em;color:#999">🔊</label>
+                        <input type="range" id="music-vol" min="0" max="100" value="40" oninput="setMusicVol(this.value)" style="flex:1;height:3px;accent-color:#c53030">
+                    </div>
+                    <div style="display:flex;gap:4px;margin-top:8px;padding-top:8px;border-top:1px solid #f0f0f0">
+                        <button class="mode-btn" data-mode="single" onclick="setBgmMode('single')" style="flex:1;padding:5px 0;font-size:.68em;background:#fff5f5;color:#c53030;border:1px solid #c53030;border-radius:4px;cursor:pointer">🔂 单曲</button>
+                        <button class="mode-btn" data-mode="list" onclick="setBgmMode('list')" style="flex:1;padding:5px 0;font-size:.68em;background:#fff5f5;color:#c53030;border:1px solid #c53030;border-radius:4px;cursor:pointer">📋 列表</button>
+                        <button class="mode-btn" data-mode="shuffle" onclick="setBgmMode('shuffle')" style="flex:1;padding:5px 0;font-size:.68em;background:#fff5f5;color:#c53030;border:1px solid #c53030;border-radius:4px;cursor:pointer">🔀 随机</button>
+                    </div>
+                    <div style="margin-top:8px;padding-top:8px;border-top:1px solid #f0f0f0">
+                        <button onclick="testAudioFiles()" style="width:100%;padding:6px;font-size:.72em;background:#f7fafc;border:1px solid #e2e8f0;border-radius:4px;cursor:pointer;color:#666">🔧 检测音频文件</button>
+                        <div id="audio-test-result" style="margin-top:6px;font-size:.7em;color:#999;max-height:80px;overflow-y:auto"></div>
+                    </div>
+                </div>
+            </div>
+            <button class="auth-btn" onclick="saveGame()" style="padding:4px 10px;font-size:.75em;background:none;border:1px solid rgba(255,255,255,0.3);color:white;cursor:pointer" title="保存进度">💾</button>
+            <button class="auth-btn" onclick="loadGame()" style="padding:4px 10px;font-size:.75em;background:none;border:1px solid rgba(255,255,255,0.3);color:white;cursor:pointer" title="读取进度">📂</button>
+        </div>
+    </header>
+    
+    <div class="app-body">
+        <!-- 左侧：行动面板 -->
+        <div class="sidebar">
+            <div class="nav-tabs">
+                <button class="tab-btn active" onclick="UI.switchTab('study')">📚 教学</button>
+                <button class="tab-btn" onclick="UI.switchTab('oi')">💻 竞赛</button>
+                <button class="tab-btn" onclick="UI.switchTab('rest')">☕ 休整</button>
+            </div>
+            
+            <div id="panel-study" class="panel-content active">
+                <button class="action-btn" onclick="UI.toggleMenu('menu-culture')">
+                    <h4>📖 文化课教学</h4>
+                    <p>提升语文、数学、英语等文化课成绩</p>
+                    <span class="cost-tag">AP:1</span>
+                </button>
+                <div id="menu-culture" class="sub-menu">
+                    <button class="mini-btn" onclick="Game.doAction('culture','chi')">语文</button>
+                    <button class="mini-btn" onclick="Game.doAction('culture','mat')">数学</button>
+                    <button class="mini-btn" onclick="Game.doAction('culture','eng')">英语</button>
+                    <button class="mini-btn" onclick="Game.doAction('culture','phy')">物理</button>
+                </div>
+                
+                <button class="action-btn" onclick="Game.doAction('exam','')">
+                    <h4>📝 阶段测验</h4>
+                    <p>检验学习成果，获得奖金</p>
+                    <span class="cost-tag">AP:1 ¥300</span>
+                </button>
+                
+                <button class="action-btn" onclick="Game.doAction('special','')">
+                    <h4>🎯 专项突破</h4>
+                    <p>针对薄弱科目集中训练</p>
+                    <span class="cost-tag">AP:2 ¥1500</span>
+                </button>
+            </div>
+            
+            <div id="panel-oi" class="panel-content">
+                <button class="action-btn" onclick="UI.toggleMenu('menu-oi')">
+                    <h4>💻 算法训练</h4>
+                    <p>提升信息学竞赛能力</p>
+                    <span class="cost-tag">AP:1</span>
+                </button>
+                <div id="menu-oi" class="sub-menu">
+                    <button class="mini-btn" onclick="Game.doAction('oi','ds')">数据结构</button>
+                    <button class="mini-btn" onclick="Game.doAction('oi','algo')">算法设计</button>
+                    <button class="mini-btn" onclick="Game.doAction('oi','math')">数学基础</button>
+                    <button class="mini-btn" onclick="Game.doAction('oi','impl')">代码实现</button>
+                </div>
+                
+                <button class="action-btn" onclick="Game.doAction('contest','')">
+                    <h4>🏆 模拟比赛</h4>
+                    <p>参加线上模拟赛，检验竞赛水平</p>
+                    <span class="cost-tag">AP:2 ¥500</span>
+                </button>
+                
+                <button class="action-btn" onclick="Game.doAction('camp','')">
+                    <h4>🏕️ 集训营</h4>
+                    <p>寒暑假集训，大幅提升竞赛能力</p>
+                    <span class="cost-tag">AP:3 ¥3000</span>
+                </button>
+            </div>
+            
+            <div id="panel-rest" class="panel-content">
+                <button class="action-btn" onclick="Game.doAction('rest','walk')">
+                    <h4>🚶 校园散步</h4>
+                    <p>缓解学生压力</p>
+                    <span class="cost-tag">AP:1</span>
+                </button>
+                
+                <button class="action-btn" onclick="Game.doAction('rest','snack')">
+                    <h4>🍢 巴蜀美食</h4>
+                    <p>请学生吃校门口小吃，大幅减压</p>
+                    <span class="cost-tag">AP:1 ¥800</span>
+                </button>
+                
+                <button class="action-btn" onclick="Game.doAction('rest','hotpot')">
+                    <h4>🍲 重庆火锅</h4>
+                    <p>包场吃火锅，清空压力并有意外收获</p>
+                    <span class="cost-tag">AP:2 ¥3000</span>
+                </button>
+                
+                <button class="action-btn" onclick="Game.doAction('rest','doctor')">
+                    <h4>🏥 请医生</h4>
+                    <p>治疗生病的学生</p>
+                    <span class="cost-tag">¥1000/人</span>
+                </button>
+            </div>
+            
+            <button class="next-turn-btn" id="btn-next" onclick="Game.nextTurn()">结束本月 →</button>
+        </div>
+        
+        <!-- 中间：学生视图 -->
+        <div class="main-view">
+            <div id="view-classroom" class="view-section active"></div>
+            <div id="view-archive" class="view-section">
+                <div class="archive-tabs" id="arc-tabs"></div>
+                <div id="arc-detail"></div>
+            </div>
+        </div>
+        
+        <!-- 右侧：日志与设施 -->
+        <div class="rightbar">
+            <h3>📋 班级日志</h3>
+            <div class="log-area" id="log-area"></div>
+            
+            <h3 style="margin-top:15px;">🏆 成就 <span style="font-size:.78em;color:#999" id="ach-count">0/12</span></h3>
+            <div id="achievements" style="font-size:.75em;color:#666;max-height:120px;overflow-y:auto"></div>
+            
+            <h3 style="margin-top:15px;">🏗️ 班级设施</h3>
+            <div id="facilities"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 事件选择模态框 -->
+<div id="choice-modal" class="overlay hidden">
+    <div class="modal-box">
+        <h3 class="modal-title">📢 突发事件</h3>
+        <p id="choice-desc" style="line-height:1.7;margin-bottom:15px;"></p>
+        <div class="choice-btns" id="choice-btns"></div>
+    </div>
+</div>
+
+<!-- 考试结果模态框 -->
+<div id="exam-modal" class="overlay hidden">
+    <div class="modal-box">
+        <h3 class="modal-title" id="exam-title">考试成绩</h3>
+        <p id="exam-subtitle" style="color:#718096;margin-bottom:10px;"></p>
+        <table class="exam-table" id="exam-table"></table>
+        <p id="exam-rewards" style="margin-top:15px;font-weight:bold;color:var(--success);"></p>
+        <button class="next-turn-btn" style="margin-top:15px;" id="exam-close" onclick="UI.closeExam()">确定</button>
+    </div>
+</div>
+
+<!-- 升级/升学模态框 -->
+<div id="upgrade-modal" class="overlay hidden">
+    <div class="modal-box">
+        <h3 class="modal-title" id="upgrade-title">🎉 升学时刻</h3>
+        <div id="upgrade-content"></div>
+        <button class="next-turn-btn" style="margin-top:20px;" onclick="UI.closeUpgrade()">继续</button>
+    </div>
+</div>
+
+<!-- 结局模态框 -->
+<div id="ending-modal" class="overlay hidden">
+    <div class="modal-box" style="max-width:800px;">
+        <div class="ending-card">
+            <h2>🎓 六年征程，终有归宿</h2>
+            <p id="ending-summary" style="font-size:1.1em;margin-bottom:20px;"></p>
+            <div class="cengfan-grid" id="ending-students"></div>
+            <p id="ending-teacher" style="margin-top:20px;padding:15px;background:#f8fafc;border-radius:8px;"></p>
+            <button class="next-turn-btn" style="margin-top:20px;" onclick="location.reload()">再来一局</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ==================== 主题切换 ====================
+const THEME_KEY='bashu_theme_teacher';
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme',theme);
+  const btn=document.getElementById('theme-btn');
+  if(btn)btn.textContent=theme==='dark'?'🌙':'☀️';
+}
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme')||'dark';
+  const next=cur==='dark'?'light':'dark';
+  applyTheme(next);
+  localStorage.setItem(THEME_KEY,next);
+}
+(function(){
+  const saved=localStorage.getItem(THEME_KEY);
+  applyTheme(saved||'dark');
+})();
+
+// ==================== 地球Online 载入动画 ====================
+(function(){
+  const LOGS=[
+    {t:'sys',m:'[SYSTEM] EarthOnline Engine v4.2.0 initializing...'},
+    {t:'info',m:'[NETWORK] Connecting to global node cluster...'},
+    {t:'ok',m:'[NETWORK] Connected. Latency: 12ms'},
+    {t:'info',m:'[AUTH] Verifying player identity...'},
+    {t:'ok',m:'[AUTH] Identity verified. UUID: 8X-7729-BASHU'},
+    {t:'info',m:'[WORLD] Loading terrain data: Sichuan Basin...'},
+    {t:'ok',m:'[WORLD] Terrain loaded. Elevation: 259m'},
+    {t:'info',m:'[INSTITUTION] Resolving: Bashu Secondary School...'},
+    {t:'ok',m:'[INSTITUTION] Resolved. Founded: 1933. Rank: Tier-1'},
+    {t:'info',m:'[COMP] Loading competition modules...'},
+    {t:'ok',m:'[COMP] Math / Physics / Chemistry / Biology / OI loaded'},
+    {t:'info',m:'[TEACHER] Initializing class management system...'},
+    {t:'ok',m:'[TEACHER] 6 student slots allocated'},
+    {t:'info',m:'[FACILITY] Loading campus facilities...'},
+    {t:'ok',m:'[FACILITY] PC Room / Library / Environment OK'},
+    {t:'warn',m:'[WARN] High difficulty mode detected. Budget pressure: 1.5x'},
+    {t:'info',m:'[AUDIO] Initializing sound subsystem...'},
+    {t:'ok',m:'[AUDIO] 4 tracks ready. Playback mode: LIST'},
+    {t:'info',m:'[SAVE] Checking local storage...'},
+    {t:'ok',m:'[SAVE] Storage OK. Capacity: 5.0 MB'},
+    {t:'info',m:'[EVENT] Loading Bashu-specific event library...'},
+    {t:'ok',m:'[EVENT] 20 events loaded. Hotpot probability: 8%'},
+    {t:'info',m:'[RENDER] Building UI components...'},
+    {t:'ok',m:'[RENDER] All panels ready'},
+    {t:'sys',m:'[SYSTEM] All modules loaded. Entering simulation...'}
+  ];
+  const loaderScreen=document.getElementById('loader-screen');
+  const terminal=document.getElementById('loader-terminal');
+  const progressFill=document.getElementById('loader-progress-fill');
+  const progressPercent=document.getElementById('loader-percent');
+  const progressStatus=document.getElementById('loader-status');
+  let logIdx=0,progress=0,targetProgress=0;
+  function addLog(entry){
+    const div=document.createElement('div');
+    div.className='log-line log-'+entry.t;
+    div.textContent=entry.m;
+    terminal.appendChild(div);
+    terminal.scrollTop=terminal.scrollHeight;
+  }
+  function updateProgress(){
+    if(progress<targetProgress){progress+=(targetProgress-progress)*0.1+0.3;if(progress>targetProgress)progress=targetProgress;}
+    progressFill.style.width=progress+'%';
+    progressPercent.textContent=Math.floor(progress)+'%';
+  }
+  function runLoader(){
+    const totalLogs=LOGS.length;
+    const interval=setInterval(()=>{
+      if(logIdx<totalLogs){addLog(LOGS[logIdx]);targetProgress=((logIdx+1)/totalLogs)*100;progressStatus.textContent=LOGS[logIdx].m.split(']')[0]+']';logIdx++;}
+      updateProgress();
+      if(logIdx>=totalLogs&&progress>=99.5){
+        clearInterval(interval);
+        progressFill.style.width='100%';progressPercent.textContent='100%';progressStatus.textContent='[DONE]';
+        setTimeout(()=>{loaderScreen.classList.add('done');setTimeout(()=>{loaderScreen.style.display='none';},800);},400);
+      }
+    },180);
+  }
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',runLoader);}else{runLoader();}
+})();
+
+// ==================== 账户系统 ====================
+const AUTH_KEY='bashu_sim_auth_teacher';
+const SAVE_KEY='bashu_sim_save_teacher';
+
+function simpleHash(str){
+  let h=0;
+  for(let i=0;i<str.length;i++){h=((h<<5)-h)+str.charCodeAt(i);h|=0}
+  return 'h'+Math.abs(h).toString(36);
+}
+
+function getAccounts(){return JSON.parse(localStorage.getItem(AUTH_KEY)||'{}')}
+function saveAccounts(accs){localStorage.setItem(AUTH_KEY,JSON.stringify(accs))}
+function getCurrentUser(){return localStorage.getItem('bashu_sim_cur_user_teacher')}
+function setCurrentUser(u){localStorage.setItem('bashu_sim_cur_user_teacher',u)}
+function clearCurrentUser(){localStorage.removeItem('bashu_sim_cur_user_teacher')}
+
+function authRegister(){
+  let u=document.getElementById('auth-user').value.trim();
+  let p=document.getElementById('auth-pass').value;
+  if(!u||!p){alert('请输入用户名和密码');return}
+  if(u.length<2){alert('用户名至少2个字符');return}
+  if(p.length<3){alert('密码至少3个字符');return}
+  let accs=getAccounts();
+  if(accs[u]){alert('用户名已存在');return}
+  accs[u]={pw:simpleHash(p),reg:Date.now()};
+  saveAccounts(accs);
+  alert('注册成功！请登录');
+}
+
+function authLogin(){
+  let u=document.getElementById('auth-user').value.trim();
+  let p=document.getElementById('auth-pass').value;
+  if(!u||!p){alert('请输入用户名和密码');return}
+  let accs=getAccounts();
+  if(!accs[u]){alert('用户不存在');return}
+  if(accs[u].pw!==simpleHash(p)){alert('密码错误');return}
+  setCurrentUser(u);
+  updateAuthUI();
+  checkSaveExists();
+}
+
+function authLogout(){
+  clearCurrentUser();
+  updateAuthUI();
+}
+
+function updateAuthUI(){
+  let cur=getCurrentUser();
+  if(cur){
+    document.getElementById('auth-guest').classList.add('hidden');
+    document.getElementById('auth-logged').classList.remove('hidden');
+    document.getElementById('auth-username').innerText=cur;
+  }else{
+    document.getElementById('auth-guest').classList.remove('hidden');
+    document.getElementById('auth-logged').classList.add('hidden');
+  }
+}
+
+function checkSaveExists(){
+  let cur=getCurrentUser();
+  if(!cur)return;
+  let saves=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}');
+  let saveData=saves[cur];
+  let info=document.getElementById('save-info');
+  if(saveData){
+    let d=new Date(saveData.timestamp);
+    info.innerText='💾 有存档 ('+d.toLocaleString()+')';
+  }else{
+    info.innerText='';
+  }
+}
+
+function saveGame(){
+  let cur=getCurrentUser();
+  if(!cur){alert('请先登录');return}
+  if(!State||!State.students||State.students.length===0){alert('还没有开始游戏');return}
+  let saves=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}');
+  saves[cur]=serializeState();
+  localStorage.setItem(SAVE_KEY,JSON.stringify(saves));
+  checkSaveExists();
+  if(typeof Game!=='undefined'&&Game.log)Game.log('💾 进度已保存！','[存档]');
+}
+
+function loadGame(){
+  let cur=getCurrentUser();
+  if(!cur){alert('请先登录');return}
+  let saves=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}');
+  let saveData=saves[cur];
+  if(!saveData){alert('没有找到存档');return}
+  if(!confirm('读取存档将覆盖当前进度，确定吗？'))return;
+  deserializeState(saveData);
+  if(typeof Game!=='undefined'&&Game.log)Game.log('📂 进度已恢复！','[存档]');
+}
+
+function serializeState(){
+  return{
+    phaseIdx:State.phaseIdx, money:State.money, ap:State.ap, maxAp:State.maxAp, diff:State.diff,
+    fac:State.fac,
+    students:State.students.map(s=>({
+      name:s.name, gender:s.gender,
+      culture:s.culture, oi:s.oi, stress:s.stress, mood:s.mood,
+      talents:s.talents.map(t=>t.id),
+      oiLevel:s.oiLevel, oiResult:s.oiResult,
+      phase:s.phase, history:s.history
+    })),
+    ended:State.ended,
+    bashuEvents:State.bashuEvents, achievements:State.achievements, achData:State.achData,
+    timestamp:Date.now()
+  };
+}
+
+function deserializeState(d){
+  State.phaseIdx=d.phaseIdx; State.money=d.money; State.ap=d.ap; State.maxAp=d.maxAp; State.diff=d.diff;
+  State.fac=d.fac;
+  State.ended=d.ended;
+  State.bashuEvents=d.bashuEvents||[];
+  State.achievements=d.achievements||[];
+  State.achData=d.achData||{hotpot:0,highExam:0,highOI:0,allPassZhongkao:false,all985:false};
+  State.students=d.students.map(sd=>{
+    let stu={
+      name:sd.name, gender:sd.gender,
+      culture:sd.culture, oi:sd.oi, stress:sd.stress, mood:sd.mood,
+      talents:(sd.talents||[]).map(id=>CONFIG.TALENTS.find(t=>t.id===id)).filter(Boolean),
+      oiLevel:sd.oiLevel||0, oiResult:sd.oiResult||null,
+      phase:sd.phase||'初中', history:sd.history||{culture:[],oi:[]}
+    };
+    return stu;
+  });
+  document.getElementById('start-screen').classList.add('hidden');
+  document.getElementById('main-app').classList.remove('hidden');
+  Game.updateUI();
+}
+
+window.addEventListener('DOMContentLoaded',updateAuthUI);
+
+// ==================== 配置 ====================
+const CONFIG = {
+    PHASES: [
+        {y:2022,m:9,name:'初一上',type:'junior',grade:7},
+        {y:2022,m:10,name:'初一下',type:'junior',grade:7},
+        {y:2022,m:11,name:'初一下',type:'junior',grade:7},
+        {y:2022,m:12,name:'初一下',type:'junior',grade:7},
+        {y:2023,m:1,name:'初一寒假',type:'junior',grade:7},
+        {y:2023,m:2,name:'初二上',type:'junior',grade:8},
+        {y:2023,m:3,name:'初二上',type:'junior',grade:8},
+        {y:2023,m:4,name:'初二下',type:'junior',grade:8},
+        {y:2023,m:5,name:'初二下',type:'junior',grade:8},
+        {y:2023,m:6,name:'初二下',type:'junior',grade:8},
+        {y:2023,m:7,name:'初二暑假',type:'junior',grade:8},
+        {y:2023,m:8,name:'初二暑假',type:'junior',grade:8},
+        {y:2023,m:9,name:'初三上',type:'junior',grade:9},
+        {y:2023,m:10,name:'初三上',type:'junior',grade:9},
+        {y:2023,m:11,name:'初三下',type:'junior',grade:9},
+        {y:2023,m:12,name:'初三下',type:'junior',grade:9},
+        {y:2024,m:1,name:'初三寒假',type:'junior',grade:9},
+        {y:2024,m:2,name:'初三冲刺',type:'junior',grade:9},
+        {y:2024,m:3,name:'初三冲刺',type:'junior',grade:9},
+        {y:2024,m:4,name:'初三冲刺',type:'junior',grade:9},
+        {y:2024,m:5,name:'初三冲刺',type:'junior',grade:9},
+        {y:2024,m:6,name:'中考',type:'exam',grade:9},
+        {y:2024,m:7,name:'高一暑假',type:'senior',grade:10},
+        {y:2024,m:8,name:'高一暑假',type:'senior',grade:10},
+        {y:2024,m:9,name:'高一上',type:'senior',grade:10},
+        {y:2024,m:10,name:'高一上',type:'senior',grade:10},
+        {y:2024,m:11,name:'高一下',type:'senior',grade:10},
+        {y:2024,m:12,name:'高一下',type:'senior',grade:10},
+        {y:2025,m:1,name:'高一寒假',type:'senior',grade:10},
+        {y:2025,m:2,name:'高二上',type:'senior',grade:11},
+        {y:2025,m:3,name:'高二上',type:'senior',grade:11},
+        {y:2025,m:4,name:'高二下',type:'senior',grade:11},
+        {y:2025,m:5,name:'高二下',type:'senior',grade:11},
+        {y:2025,m:6,name:'高二下',type:'senior',grade:11},
+        {y:2025,m:7,name:'高二暑假',type:'senior',grade:11},
+        {y:2025,m:8,name:'高二暑假',type:'senior',grade:11},
+        {y:2025,m:9,name:'高三上',type:'senior',grade:12},
+        {y:2025,m:10,name:'高三上',type:'senior',grade:12},
+        {y:2025,m:11,name:'NOIP',type:'oi',grade:12},
+        {y:2025,m:12,name:'高三下',type:'senior',grade:12},
+        {y:2026,m:1,name:'高三寒假',type:'senior',grade:12},
+        {y:2026,m:2,name:'省选',type:'oi',grade:12},
+        {y:2026,m:3,name:'高三冲刺',type:'senior',grade:12},
+        {y:2026,m:4,name:'高三冲刺',type:'senior',grade:12},
+        {y:2026,m:5,name:'NOI',type:'oi',grade:12},
+        {y:2026,m:6,name:'高考',type:'exam',grade:12}
+    ],
+    SUBJECTS: {
+        culture: [
+            {id:'chi',n:'语文',cap:150},{id:'mat',n:'数学',cap:150},{id:'eng',n:'英语',cap:150},
+            {id:'phy',n:'物理',cap:100},{id:'che',n:'化学',cap:100}
+        ],
+        oi: [
+            {id:'ds',n:'数据结构',cap:100},{id:'algo',n:'算法设计',cap:100},
+            {id:'math',n:'数学基础',cap:100},{id:'impl',n:'代码实现',cap:100}
+        ]
+    },
+    TALENTS: [
+        {id:'t1',n:'逻辑思维',t:'pos',d:'算法/数学+20%'},{id:'t2',n:'语言天赋',t:'pos',d:'语文/英语+20%'},
+        {id:'t3',n:'大心脏',t:'pos',d:'压力增长减半'},{id:'t4',n:'代码直觉',t:'pos',d:'代码实现+25%'},
+        {id:'t5',n:'全面手',t:'pos',d:'全科微弱加成'},{id:'t6',n:'竞赛体质',t:'pos',d:'比赛不易失常'},
+        {id:'t7',n:'数感超群',t:'pos',d:'数学/数学基础+25%'},{id:'t8',n:'数据结构大师',t:'pos',d:'数据结构+25%'},
+        {id:'n1',n:'粗心大意',t:'neg',d:'考试易扣分'},{id:'n2',n:'玻璃心',t:'neg',d:'压力极易升高'},
+        {id:'n3',n:'偏科严重',t:'neg',d:'随机科目发挥拉胯'},{id:'n4',n:'网瘾少年',t:'neg',d:'概率翘课打游戏'},
+        {id:'n5',n:'失眠症',t:'neg',d:'每月额外增加压力'}
+    ],
+    FACILITIES: [
+        {id:'pc',n:'机房设备',lv:'无/普通/高性能',p:[0,5000,15000],d:'提升OI训练效率'},
+        {id:'lib',n:'图书资料',lv:'基础/丰富/海量',p:[0,3000,8000],d:'提升文化课效率'},
+        {id:'env',n:'学习环境',lv:'一般/良好/顶级',p:[0,4000,10000],d:'降低压力增长'}
+    ],
+    UNIS: [
+        {min:685,list:['清华大学','北京大学']},
+        {min:650,list:['复旦大学','上海交通大学','浙江大学','中科大','南京大学']},
+        {min:600,list:['重庆大学','四川大学','电子科技大学','武汉大学']},
+        {min:500,list:['西南大学','重庆邮电大学','西南交通大学']},
+        {min:0,list:['重庆理工大学','复读学校','就业']}
+    ],
+    OI_RESULT: [
+        {min:380,title:'IOI国家队',desc:'入选国家队，代表中国出征国际奥赛！'},
+        {min:340,title:'NOI金牌',desc:'获得金牌，保送清华/北大！'},
+        {min:300,title:'NOI银牌',desc:'获得银牌，强基计划破格入围！'},
+        {min:260,title:'NOI铜牌',desc:'获得铜牌，获得名校关注。'},
+        {min:200,title:'省一等奖',desc:'获得省一，具备强基计划资格。'},
+        {min:150,title:'省二等奖',desc:'获得省二，综合素质评价加分。'},
+        {min:0,title:'参与奖',desc:'积累了宝贵的竞赛经验。'}
+    ]
+};
+
+// ==================== 巴蜀特色数据 ====================
+const BASHU={
+    teachers:['老王（数学）','李老师（物理）','张教授（化学）','陈博士（生物）','周教练（信息学）','赵老师（语文）','吴老师（英语）'],
+    spots:['图书馆','实验室','竞赛教室','操场','食堂','礼堂','巴蜀书院','科技馆','校史馆'],
+    traditions:['巴蜀杯','科技节','运动会','元旦晚会','春游','学科周','社团招新','成人礼'],
+    foods:['小面','酸辣粉','抄手','豆花饭','火锅','凉面','糍粑','冰粉'],
+    landmarks:['黄花园校区','巴蜀书院','科技馆','校史馆','大礼堂','实验楼','田径场'],
+    clubs:['数学建模社','物理实验社','化学探究社','生物协会','信息学社','辩论队','模拟联合国','文学社'],
+    mottos:['公正诚朴','善为根 雅为骨 志为魂','追求卓越 永不满足'],
+    famousAlumni:['科学家','院士','奥运冠军','著名作家','知名企业家']
+};
+
+// ==================== 成就系统 ====================
+const ACHIEVEMENTS=[
+    {id:'first_step',n:'初出茅庐',d:'完成第一次竞赛训练',cond:()=>State.students.some(s=>s.history.oi.length>=1)},
+    {id:'rich',n:'小富翁',d:'班级资金超过20000元',cond:()=>State.money>=20000},
+    {id:'hotpot_king',n:'火锅之王',d:'累计组织火锅团建3次',cond:()=>State.achData&&State.achData.hotpot>=3},
+    {id:'exam_master',n:'严师出高徒',d:'学生考试平均分超过500',cond:()=>State.achData&&State.achData.highExam>=1},
+    {id:'oi_master',n:'竞赛名师',d:'学生OI竞赛超过250分',cond:()=>State.achData&&State.achData.highOI>=1},
+    {id:'bashu_lover',n:'巴蜀之子',d:'参与巴蜀特色活动超过3次',cond:()=>State.bashuEvents&&State.bashuEvents.length>=3},
+    {id:'zhongkao_pass',n:'中考通关',d:'所有学生成功升入高中部',cond:()=>State.achData&&State.achData.allPassZhongkao},
+    {id:'provincial_team',n:'省队荣耀',d:'有学生入选省队',cond:()=>State.students.some(s=>s.oiLevel>=2)},
+    {id:'gold_medal',n:'金牌得主',d:'有学生获得NOI金牌',cond:()=>State.students.some(s=>s.oiResult&&s.oiResult.min>=340)},
+    {id:'tsinghua',n:'清华园见',d:'有学生保送清北',cond:()=>State.ended&&State.students.some(s=>s.oiResult&&s.oiResult.min>=340)},
+    {id:'perfect_class',n:'完美班级',d:'所有学生都进入985',cond:()=>State.achData&&State.achData.all985},
+    {id:'fac_master',n:'设施达人',d:'所有设施升到满级',cond:()=>State.fac.pc>=2&&State.fac.lib>=2&&State.fac.env>=2}
+];
+
+// ==================== 状态 ====================
+let State = {
+    phaseIdx: 0, money: 0, ap: 3, maxAp: 3, diff: 'normal',
+    fac: {pc:0, lib:0, env:0},
+    students: [], ended: false,
+    bashuEvents:[], achievements:[], achData:{hotpot:0,highExam:0,highOI:0,allPassZhongkao:false,all985:false}
+};
+
+// ==================== 游戏引擎 ====================
+const Game = {
+    start(diff) {
+        State.diff = diff;
+        State.money = diff === 'normal' ? 10000 : 3000;
+        let baseStat = diff === 'normal' ? 50 : 35;
+        
+        const defaultNames = ['张思远','李梦琪','王浩然','陈雨桐','刘子轩','赵欣怡'];
+        let names = [];
+        for(let i=0;i<6;i++) {
+            let input = document.getElementById(`name-${i}`).value.trim();
+            names.push(input || defaultNames[i]);
+        }
+        
+        let posPool = CONFIG.TALENTS.filter(t=>t.t==='pos');
+        let negPool = CONFIG.TALENTS.filter(t=>t.t==='neg');
+        
+        State.students = names.map(n => {
+            let pos = this.shuffle([...posPool]).slice(0,2);
+            let neg = this.shuffle([...negPool]).slice(0,1);
+            return {
+                name: n, stress: 25 + Math.random()*15, sick: 0,
+                phase: '初中', oiLevel: 0,
+                culture: {chi:baseStat, mat:baseStat+10, eng:baseStat-5, phy:baseStat, che:baseStat},
+                oi: {ds:20, algo:20, math:25, impl:20},
+                talents: [...pos, ...neg],
+                history: {culture:[], oi:[], events:[]}
+            };
+        });
+        
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('main-app').classList.remove('hidden');
+        
+        this.log('🎉 欢迎来到巴蜀中学竞赛班！六年征程正式开始！','[开学]');
+        this.updateUI();
+    },
+    
+    shuffle(arr) {
+        let res = [...arr];
+        for(let i=res.length-1;i>0;i--) {
+            let j = Math.floor(Math.random()*(i+1));
+            [res[i],res[j]] = [res[j],res[i]];
+        }
+        return res;
+    },
+    
+    getPhase() { return CONFIG.PHASES[State.phaseIdx]; },
+    
+    doAction(cat, sub) {
+        if(State.ended) return;
+        let phase = this.getPhase();
+        
+        if(State.ap < 1 && cat !== 'rest') return alert('AP不足！');
+        
+        let costAP = 0, costMoney = 0;
+        if(cat === 'culture') { costAP = 1; }
+        else if(cat === 'oi') { costAP = 1; }
+        else if(cat === 'exam') { costAP = 1; costMoney = 300; }
+        else if(cat === 'contest') { costAP = 2; costMoney = 500; }
+        else if(cat === 'special') { costAP = 2; costMoney = 1500; }
+        else if(cat === 'camp') { costAP = 3; costMoney = 3000; }
+        else if(cat === 'rest') {
+            if(sub === 'walk') costAP = 1;
+            else if(sub === 'snack') { costAP = 1; costMoney = 800; }
+            else if(sub === 'hotpot') { costAP = 2; costMoney = 3000; }
+            else if(sub === 'doctor') costMoney = 1000;
+        }
+        
+        if(State.ap < costAP) return alert('AP不足！');
+        if(State.money < costMoney) return alert('资金不足！');
+        
+        if(sub !== 'doctor') { State.ap -= costAP; State.money -= costMoney; }
+        
+        let pcBonus = 1 + State.fac.pc * 0.2;
+        let libBonus = 1 + State.fac.lib * 0.2;
+        let envReduce = State.fac.env * 8;
+        let diffMod = State.diff === 'hard' ? 0.8 : 1.0;
+        
+        State.students.filter(s=>s.sick===0).forEach(s => {
+            if(s.talents.some(t=>t.id==='n4') && Math.random()<0.12) {
+                this.log(`${s.name} 翘课去网吧打游戏了！`,'[网瘾发作]');
+                return;
+            }
+            
+            if(cat === 'culture') {
+                let base = (sub === 'chi' ? 2 : 2.5) * libBonus * diffMod;
+                if(s.stress > 80) base *= Math.max(0, 1-(s.stress-80)/100);
+                if(s.talents.some(t=>t.id==='t5')) base *= 1.15;
+                if((sub==='chi'||sub==='eng') && s.talents.some(t=>t.id==='t2')) base *= 1.2;
+                if(sub==='mat' && s.talents.some(t=>t.id==='t7')) base *= 1.25;
+                s.culture[sub] += base;
+                s.stress += Math.max(3, 12 - envReduce);
+            }
+            else if(cat === 'oi') {
+                let base = 3 * pcBonus * diffMod;
+                if(s.stress > 80) base *= Math.max(0, 1-(s.stress-80)/100);
+                if(s.talents.some(t=>t.id==='t5')) base *= 1.15;
+                if(sub==='ds' && s.talents.some(t=>t.id==='t8')) base *= 1.25;
+                if(sub==='algo' && s.talents.some(t=>t.id==='t1')) base *= 1.2;
+                if(sub==='math' && s.talents.some(t=>t.id==='t7')) base *= 1.25;
+                if(sub==='impl' && s.talents.some(t=>t.id==='t4')) base *= 1.25;
+                s.oi[sub] += base;
+                s.stress += Math.max(4, 15 - envReduce);
+            }
+            else if(cat === 'exam') {
+                // 测验在nextTurn中处理
+            }
+            else if(cat === 'contest') {
+                let base = 2 * pcBonus * diffMod;
+                ['ds','algo','math','impl'].forEach(k => s.oi[k] += base);
+                s.stress += Math.max(8, 20 - envReduce);
+            }
+            else if(cat === 'special') {
+                let weak = Object.entries(s.culture).sort((a,b)=>a[1]-b[1])[0][0];
+                s.culture[weak] += 5 * libBonus * diffMod;
+                s.stress += Math.max(5, 18 - envReduce);
+            }
+            else if(cat === 'camp') {
+                ['ds','algo','math','impl'].forEach(k => s.oi[k] += 6 * pcBonus * diffMod);
+                s.stress += Math.max(10, 25 - envReduce);
+            }
+            else if(cat === 'rest') {
+                if(sub === 'walk') s.stress = Math.max(0, s.stress - 20);
+                if(sub === 'snack') s.stress = Math.max(0, s.stress - 35);
+                if(sub === 'hotpot') {
+                    s.stress = 0;
+                    State.achData.hotpot++;
+                    let hadNeg = s.talents.some(t=>t.t==='neg');
+                    s.talents = s.talents.filter(t=>t.t!=='neg' || Math.random()>0.6);
+                    if(hadNeg && !s.talents.some(t=>t.t==='neg')) {
+                        this.log(`${s.name} 吃火锅时想通了，克服了心魔！`,'[蜕变]');
+                    }
+                }
+            }
+        });
+        
+        if(cat === 'exam') this.doExam('阶段测验', false);
+        else if(cat === 'contest') this.doOIContest('模拟赛');
+        else if(cat === 'rest' && sub === 'doctor') UI.showDoctor();
+        else {
+            let logMap = {
+                culture:'文化课教学', oi:'算法训练', special:'专项突破',
+                camp:'集训营', rest:'休整'
+            };
+            if(cat !== 'rest') this.log(`开展了${logMap[cat]||cat}`, costMoney>0?`[资金-${costMoney}]`:'');
+        }
+        
+        UI.hideMenus();
+        this.updateUI();
+    },
+    
+    doExam(name, isFinal) {
+        let phase = this.getPhase();
+        let results = State.students.filter(s=>s.sick===0).map(s => {
+            let scores = {};
+            let total = 0;
+            CONFIG.SUBJECTS.culture.forEach(sub => {
+                let base = s.culture[sub.id];
+                let sFac = 1 - s.stress/500;
+                let drop = s.talents.some(t=>t.id==='n3') ? 0.9 : 1;
+                let steady = s.talents.some(t=>t.id==='t6') ? 0 : 1;
+                let raw = base * sFac * drop;
+                
+                // 随机事件
+                let pGood = (base/sub.cap)*0.3;
+                let pBad = (1-base/sub.cap)*0.3;
+                let rnd = Math.random();
+                if(rnd < pGood) raw += 5 + Math.random()*10;
+                else if(rnd > 1-pBad) raw -= (3 + Math.random()*8) * (1-steady);
+                
+                scores[sub.id] = Math.max(0, Math.min(sub.cap, Math.round(raw)));
+                total += scores[sub.id];
+            });
+            return {name:s.name, scores, total, ref:s};
+        });
+        
+        results.sort((a,b)=>b.total-a.total);
+        
+        // 奖金
+        let reward = 0;
+        let avgScore = results.reduce((a,b)=>a+b.total,0)/results.length;
+        if(avgScore>=500)State.achData.highExam++;
+        results.forEach((r,i) => {
+            if(i===0) reward += 2000;
+            else if(i===1) reward += 1000;
+            else if(i===2) reward += 500;
+            if(!isFinal) r.ref.history.culture.push(r.total);
+        });
+        State.money += reward + 1000;
+        
+        UI.showExam(name, results, `奖金: ¥${reward+1000}`);
+    },
+    
+    doOIContest(name) {
+        let results = State.students.filter(s=>s.sick===0).map(s => {
+            let total = Object.values(s.oi).reduce((a,b)=>a+b,0);
+            let sFac = 1 - s.stress/400;
+            let steady = s.talents.some(t=>t.id==='t6') ? 0.95 : 1;
+            let raw = total * sFac * steady;
+            
+            let pGood = (total/400)*0.25;
+            let pBad = (1-total/400)*0.25;
+            let rnd = Math.random();
+            if(rnd < pGood) raw += 10 + Math.random()*15;
+            else if(rnd > 1-pBad) raw -= 5 + Math.random()*10;
+            
+            let score = Math.max(0, Math.min(400, Math.round(raw)));
+            return {name:s.name, score, ref:s};
+        });
+        
+        results.sort((a,b)=>b.score-a.score);
+        
+        let reward = 0;
+        let avgScore = results.reduce((a,b)=>a+b.score,0)/results.length;
+        if(avgScore>=250)State.achData.highOI++;
+        results.forEach((r,i) => {
+            if(i===0) reward += 3000;
+            else if(i===1) reward += 1500;
+            else if(i===2) reward += 800;
+            r.ref.history.oi.push(r.score);
+        });
+        State.money += reward;
+        
+        UI.showOIResult(name, results, `奖金: ¥${reward}`);
+    },
+    
+    nextTurn() {
+        if(State.ended) return;
+        let phase = this.getPhase();
+        
+        // 检查阶段转换
+        if(phase.type === 'exam' && phase.grade === 9) {
+            this.doZhongkao();
+            return;
+        }
+        if(phase.type === 'oi' && phase.name === 'NOIP') {
+            this.doNOIP();
+            return;
+        }
+        if(phase.type === 'oi' && phase.name === '省选') {
+            this.doShengxuan();
+            return;
+        }
+        if(phase.type === 'oi' && phase.name === 'NOI') {
+            this.doNOI();
+            return;
+        }
+        if(phase.type === 'exam' && phase.grade === 12) {
+            this.doGaokao();
+            return;
+        }
+        
+        // 推进时间
+        State.phaseIdx++;
+        if(State.phaseIdx >= CONFIG.PHASES.length) {
+            this.doGaokao();
+            return;
+        }
+        
+        State.ap = State.maxAp;
+        State.money += 800 + State.students.length * 150;
+        
+        // 学生状态更新
+        State.students.forEach(s => {
+            if(s.sick > 0) {
+                s.sick--;
+                if(s.sick === 0) this.log(`${s.name} 病愈归队了！`,'[康复]');
+            }
+            
+            let heal = s.talents.some(t=>t.id==='t3') ? 6 : 3;
+            s.stress = Math.max(0, s.stress - heal);
+            
+            if(s.talents.some(t=>t.id==='n5')) s.stress += 6;
+            
+            // 压力崩溃
+            if(s.stress > 90 && Math.random() > 0.7) {
+                let negs = CONFIG.TALENTS.filter(t=>t.t==='neg');
+                let newNeg = negs[Math.floor(Math.random()*negs.length)];
+                if(!s.talents.some(t=>t.id===newNeg.id)) {
+                    s.talents.push(newNeg);
+                    this.log(`⚠️ ${s.name} 压力崩溃！获得了负面状态：${newNeg.n}`,'[心态爆炸]');
+                }
+            }
+            
+            // 随机生病
+            if(s.sick === 0 && Math.random() < 0.08) {
+                s.sick = 2;
+                this.log(`${s.name} 生病了，需要休息2个月`,'[生病]');
+            }
+        });
+        
+        // 检查升学
+        let newPhase = this.getPhase();
+        if(newPhase.grade === 10 && phase.grade === 9) {
+            this.log('🎉 恭喜进入高中部！竞赛之路正式开启！','[升学]');
+        }
+        if(newPhase.name === '高三上') {
+            State.maxAp = 4;
+            this.log('🔥 进入高三冲刺阶段！每月行动力提升至4点！','[冲刺]');
+        }
+        
+        this.triggerEvent();
+        this.updateUI();
+    },
+    
+    doZhongkao() {
+        let results = State.students.map(s => {
+            let total = Object.values(s.culture).reduce((a,b)=>a+b,0);
+            return {name:s.name, total, ref:s};
+        });
+        results.sort((a,b)=>b.total-a.total);
+        
+        let html = '<h3>🎓 中考成绩揭晓</h3><div class="cengfan-grid">';
+        let allPass = results.every(r=>r.total>=400);
+        if(allPass)State.achData.allPassZhongkao=true;
+        results.forEach(r => {
+            let pass = r.total >= 400;
+            r.ref.phase = pass ? '高中' : '落榜';
+            html += `<div class="cengfan-card" style="border-color:${pass?'var(--success)':'var(--danger)'}">
+                <div style="font-size:1.3em;font-weight:bold;">${r.name}</div>
+                <div style="font-size:1.5em;color:var(--primary);margin:8px 0;">${Math.round(r.total)}分</div>
+                <div style="color:${pass?'var(--success)':'var(--danger)'};font-weight:bold;">${pass?'✅ 升入高中':'❌ 中考失利'}</div>
+            </div>`;
+        });
+        html += '</div>';
+        
+        UI.showUpgrade('中考放榜', html);
+        State.phaseIdx++;
+        this.updateUI();
+    },
+    
+    doNOIP() {
+        this.doOIContest('NOIP');
+        State.phaseIdx++;
+    },
+    
+    doShengxuan() {
+        let results = State.students.filter(s=>s.sick===0).map(s => {
+            let oiTotal = Object.values(s.oi).reduce((a,b)=>a+b,0);
+            let cultureTotal = Object.values(s.culture).reduce((a,b)=>a+b,0);
+            let total = oiTotal * 0.7 + cultureTotal * 0.3;
+            return {name:s.name, oi:Math.round(oiTotal), culture:Math.round(cultureTotal), total:Math.round(total), ref:s};
+        });
+        results.sort((a,b)=>b.total-a.total);
+        
+        // 省队名额
+        let teamSize = Math.min(4, results.length);
+        results.forEach((r,i) => {
+            r.ref.oiLevel = i < teamSize ? 2 : (i < 8 ? 1 : 0);
+        });
+        
+        let html = '<h3>🏆 省选结果</h3><p style="margin-bottom:15px;">省队名额：' + teamSize + '人</p><div class="cengfan-grid">';
+        results.forEach((r,i) => {
+            let isTeam = i < teamSize;
+            html += `<div class="cengfan-card" style="border-color:${isTeam?'var(--success)':'var(--border)'}">
+                <div style="font-size:1.2em;font-weight:bold;">${r.name} ${isTeam?'🥇':''}</div>
+                <div style="font-size:0.85em;color:#718096;margin:5px 0;">OI: ${r.oi} | 文化: ${r.culture}</div>
+                <div style="color:${isTeam?'var(--success)':'var(--text)'};font-weight:bold;">${isTeam?'入选省队！':'继续加油'}</div>
+            </div>`;
+        });
+        html += '</div>';
+        
+        UI.showUpgrade('省选放榜', html);
+        State.phaseIdx++;
+    },
+    
+    doNOI() {
+        let team = State.students.filter(s=>s.oiLevel>=2 && s.sick===0);
+        if(team.length === 0) {
+            this.log('省队成员全部无法参赛，NOI缺席……','[遗憾]');
+            State.phaseIdx++;
+            return;
+        }
+        
+        let results = team.map(s => {
+            let total = Object.values(s.oi).reduce((a,b)=>a+b,0);
+            let sFac = 1 - s.stress/400;
+            let steady = s.talents.some(t=>t.id==='t6') ? 0.95 : 1;
+            let raw = total * sFac * steady;
+            let rnd = Math.random();
+            if(rnd < 0.2) raw += 15 + Math.random()*20;
+            else if(rnd > 0.85) raw -= 10 + Math.random()*15;
+            let score = Math.max(0, Math.min(400, Math.round(raw)));
+            return {name:s.name, score, ref:s};
+        });
+        results.sort((a,b)=>b.score-a.score);
+        
+        let html = '<h3>🥇 NOI 全国决赛</h3><div class="cengfan-grid">';
+        results.forEach(r => {
+            let result = CONFIG.OI_RESULT.find(x=>r.score>=x.min);
+            r.ref.oiResult = result;
+            html += `<div class="cengfan-card" style="border-color:var(--accent)">
+                <div style="font-size:1.2em;font-weight:bold;">${r.name}</div>
+                <div style="font-size:1.8em;color:var(--accent);margin:8px 0;">${r.score}分</div>
+                <div style="font-weight:bold;color:var(--primary);">${result.title}</div>
+                <div style="font-size:0.8em;color:#718096;margin-top:5px;">${result.desc}</div>
+            </div>`;
+        });
+        html += '</div>';
+        
+        UI.showUpgrade('NOI 成绩', html);
+        State.phaseIdx++;
+    },
+    
+    doGaokao() {
+        State.ended = true;
+        let html = '';
+        let totalScore = 0;
+        
+        State.students.forEach(s => {
+            let culture = Object.values(s.culture).reduce((a,b)=>a+b,0);
+            let oiScore = s.oiResult ? Math.max(Object.values(s.oi).reduce((a,b)=>a+b,0), 200) : 0;
+            let finalScore = s.oiResult && s.oiResult.min >= 340 ? 999 : Math.round(culture + oiScore * 0.1);
+            totalScore += finalScore;
+            
+            let uni;
+            if(finalScore >= 999) uni = '保送' + (s.oiResult && s.oiResult.min >= 380 ? '清华大学（IOI国家队）' : '清华大学/北京大学');
+            else {
+                let tier = CONFIG.UNIS.find(u=>finalScore>=u.min) || CONFIG.UNIS[4];
+                uni = tier.list[Math.floor(Math.random()*tier.list.length)];
+            }
+            
+            html += `<div class="cengfan-card">
+                <div style="font-size:1.3em;font-weight:bold;">${s.name}</div>
+                <div style="font-size:1.2em;color:var(--primary);margin:8px 0;">${finalScore>=999?'🎉 保送':Math.round(finalScore)+'分'}</div>
+                <div style="color:var(--secondary);font-weight:bold;">${uni}</div>
+                ${s.oiResult ? `<div style="font-size:0.8em;color:var(--accent);margin-top:5px;">${s.oiResult.title}</div>` : ''}
+            </div>`;
+        });
+        
+        let avg = totalScore / State.students.length;
+        let all985 = State.students.every(s=>{
+            let culture = Object.values(s.culture).reduce((a,b)=>a+b,0);
+            let oiScore = s.oiResult ? Math.max(Object.values(s.oi).reduce((a,b)=>a+b,0), 200) : 0;
+            let finalScore = s.oiResult && s.oiResult.min >= 340 ? 999 : Math.round(culture + oiScore * 0.1);
+            return finalScore >= 600;
+        });
+        if(all985)State.achData.all985=true;
+        let teacherEval = avg >= 700 ? '传奇教练！你培养出了国家队选手，名垂巴蜀校史！' :
+                         avg >= 650 ? '金牌教练！多名学生进入清北，你是巴蜀的骄傲！' :
+                         avg >= 600 ? '优秀教练！学生们都考入了985名校，家长纷纷送锦旗。' :
+                         avg >= 500 ? '合格教练！虽然不算顶尖，但每个学生都有了归宿。' :
+                         '遗憾……多名学生发挥失常，家长投诉不断，你被调去了普通班。';
+        
+        document.getElementById('ending-summary').innerText = `六年时光飞逝，你的学生们各奔前程。班级平均分：${Math.round(avg)}`;
+        document.getElementById('ending-students').innerHTML = html;
+        document.getElementById('ending-teacher').innerHTML = `<h3>🏆 你的执教评价</h3><p style="font-size:1.1em;margin-top:10px;">${teacherEval}</p>`;
+        document.getElementById('ending-modal').classList.remove('hidden');
+    },
+    
+    triggerEvent() {
+        if(Math.random() > 0.5) return;
+        
+        let events = [
+            {
+                c: () => true,
+                t: '隔壁班班主任来挑衅："你们竞赛班文化课肯定不行！"',
+                c1: {n:'用成绩打脸', f:()=>{State.students.forEach(s=>{s.stress+=10;s.culture.mat+=3;});this.log('全班士气高涨，数学能力微幅提升','[斗志]');}},
+                c2: {n:'不予理会', f:()=>{this.log('你选择了沉默……','[平静]');}}
+            },
+            {
+                c: () => true,
+                t: '学校突然宣布下周进行全校联考！',
+                c1: {n:'紧急加练', f:()=>{State.students.forEach(s=>{s.stress+=15;s.culture.chi+=2;s.culture.mat+=2;});this.log('紧急加练，压力上升但能力微幅提升','[备考]');}},
+                c2: {n:'正常节奏', f:()=>{this.log('保持平常心应对','[从容]');}}
+            },
+            {
+                c: () => State.fac.pc < 2,
+                t: '学生们抱怨机房电脑太卡，编译一次要等5分钟……',
+                c1: {n:'升级设备', f:()=>{let cost=CONFIG.FACILITIES[0].p[State.fac.pc+1];if(State.money>=cost){State.money-=cost;State.fac.pc++;this.log('升级了机房设备','[设施升级]');}else{this.log('资金不足，学生怨声载道', '[压力+]');State.students.forEach(s=>s.stress+=15);}}},
+                c2: {n:'忍耐一下', f:()=>{State.students.forEach(s=>s.stress+=20);this.log('学生们在卡顿中艰难训练','[压力++]');}}
+            },
+            {
+                c: () => true,
+                t: '某位家长送来一箱红牛，说是给孩子提神……',
+                c1: {n:'分给全班', f:()=>{State.students.forEach(s=>{s.stress-=10;s.stress=Math.max(0,s.stress);});this.log('全班喝了红牛，精神焕发','[压力-]');}},
+                c2: {n:'婉拒', f:()=>{this.log('你婉拒了家长的好意','[无功无过]');}}
+            },
+            {
+                c: () => true,
+                t: '发现两名学生在晚自习偷偷讨论游戏！',
+                c1: {n:'严厉批评', f:()=>{let stus=this.shuffle([...State.students]).slice(0,2);stus.forEach(s=>{s.stress+=25;s.culture.eng-=1;});this.log(`批评了${stus[0].name}和${stus[1].name}`,'[纪律]');}},
+                c2: {n:'加入讨论', f:()=>{let stus=this.shuffle([...State.students]).slice(0,2);stus.forEach(s=>{s.stress=0;s.oi.impl+=3;});this.log(`和${stus[0].name}他们聊起了游戏设计`,'[意外收获]');}}
+            },
+            // ========== 巴蜀特色事件 ==========
+            {
+                c: () => true,
+                t: `巴蜀${BASHU.landmarks[Math.floor(Math.random()*BASHU.landmarks.length)]}的樱花开了，很多学生想去拍照打卡。`,
+                c1: {n:'组织班级赏花', f:()=>{State.students.forEach(s=>{s.stress-=10;s.mood=Math.min(100,s.mood+15);});State.bashuEvents.push('赏花');this.log('全班去赏花，心情大好！','[赏花]');}},
+                c2: {n:'继续上课', f:()=>{State.students.forEach(s=>{s.culture.mat+=1;});this.log('你选择了继续上课','[专注]');}}
+            },
+            {
+                c: () => true,
+                t: `巴蜀中学${BASHU.clubs[Math.floor(Math.random()*BASHU.clubs.length)]}在招新，有学生想参加。`,
+                c1: {n:'鼓励参加', f:()=>{let stu=State.students[Math.floor(Math.random()*State.students.length)];stu.mood=Math.min(100,stu.mood+20);State.bashuEvents.push('社团');this.log(`${stu.name}加入了社团，心情很好！`,'[社团]');}},
+                c2: {n:'专注竞赛', f:()=>{State.students.forEach(s=>{s.oi.impl+=1;});this.log('你建议学生专注竞赛','[专注]');}}
+            },
+            {
+                c: () => true,
+                t: '学校组织参观校史馆，了解巴蜀的辉煌历史……',
+                c1: {n:'组织参观', f:()=>{State.students.forEach(s=>{s.mood=Math.min(100,s.mood+15);s.stress=Math.max(0,s.stress-10);});State.bashuEvents.push('校史馆');this.log(`看到${BASHU.famousAlumni[Math.floor(Math.random()*BASHU.famousAlumni.length)]}校友的事迹，学生们深受鼓舞！`,'[校史]');}},
+                c2: {n:'留在教室', f:()=>{State.students.forEach(s=>{s.oi.impl+=2;});this.log('留在教室刷题','[专注]');}}
+            },
+            {
+                c: () => true,
+                t: '巴蜀科技节开幕了！有机器人展示、编程作品展览……',
+                c1: {n:'组织参观', f:()=>{State.students.forEach(s=>{s.mood=Math.min(100,s.mood+20);s.stress=Math.max(0,s.stress-8);});State.bashuEvents.push('科技节');this.log('科技节太酷了！学生们看到了很多前沿技术。','[科技节]');}},
+                c2: {n:'准备作品参展', f:()=>{State.students.forEach(s=>{s.oi.impl+=2;s.stress+=5;});this.log('学生们准备了一个竞赛相关的作品参展，收获很多。','[参展]');}}
+            },
+            {
+                c: () => true,
+                t: '班主任宣布：本周六巴蜀大礼堂有名师讲座，主题是竞赛与高考的平衡。',
+                c1: {n:'组织去听', f:()=>{State.students.forEach(s=>{s.mood=Math.min(100,s.mood+12);s.stress=Math.max(0,s.stress-10);});State.bashuEvents.push('讲座');this.log('名师的分享让学生们对竞赛之路有了更清晰的认识。','[讲座]');}},
+                c2: {n:'自主训练', f:()=>{State.students.forEach(s=>{s.oi.impl+=3;});this.log('学生们选择了自主训练。','[专注]');}}
+            },
+            {
+                c: () => true,
+                t: '食堂阿姨今天做了限定版巴蜀冰粉，据说排队的人超级多！',
+                c1: {n:'请全班吃', f:()=>{if(State.money>=150){State.money-=150;State.students.forEach(s=>{s.mood=Math.min(100,s.mood+20);});this.log('冰粉太好吃了！夏日限定版果然不一样。','[美食]');}else{this.log('资金不足，只能看着学生排队……','[资金]');}}},
+                c2: {n:'不去了', f:()=>{this.log('还是学习重要','[专注]');}}
+            },
+            {
+                c: () => true,
+                t: '深夜在巴蜀操场散步，遇到了同样在散步的竞赛教练……',
+                c1: {n:'请教问题', f:()=>{State.students.forEach(s=>{s.oi.impl+=2;});this.log('教练给学生们点拨了几个关键点，豁然开朗！','[指点]');}},
+                c2: {n:'闲聊放松', f:()=>{State.students.forEach(s=>{s.stress=Math.max(0,s.stress-10);});this.log('教练讲了些他当年的竞赛故事，很有趣。','[聊天]');}}
+            },
+            {
+                c: () => true,
+                t: '巴蜀实验楼新到了一批高端实验设备，竞赛生可以申请使用！',
+                c1: {n:'申请使用', f:()=>{State.students.forEach(s=>{s.oi.impl+=3;});State.bashuEvents.push('实验设备');this.log('新设备太棒了！实验效率大幅提升。','[设备]');}},
+                c2: {n:'暂时不用', f:()=>{this.log('你觉得现在的条件也够用了。','[佛系]');}}
+            },
+            {
+                c: () => true,
+                t: '竞赛教练通知：暑假有去外地集训的机会，费用自理约8000元。',
+                c1: {n:'组织参加', f:()=>{if(State.money>=8000){State.money-=8000;State.students.forEach(s=>{s.oi.impl+=5;});State.bashuEvents.push('外地集训');this.log('外地集训收获巨大！认识了很多外校高手。','[集训]');}else{this.log('资金不足，无法组织外地集训……','[资金]');}}},
+                c2: {n:'留在学校', f:()=>{State.students.forEach(s=>{s.oi.impl+=2;});this.log('留在巴蜀继续训练，也很充实。','[留校]');}}
+            },
+            {
+                c: () => true,
+                t: '巴蜀中学田径场翻新了，新增了夜跑灯光和跑道。',
+                c1: {n:'组织夜跑', f:()=>{State.students.forEach(s=>{s.stress=Math.max(0,s.stress-15);s.mood=Math.min(100,s.mood+15);});this.log('新跑道很舒服，夜跑体验满分！','[夜跑]');}},
+                c2: {n:'不去了', f:()=>{State.students.forEach(s=>{s.oi.impl+=1;});this.log('继续训练','[专注]');}}
+            },
+            {
+                c: () => true,
+                t: '学校广播站播放了巴蜀中学校歌，熟悉的旋律响起……',
+                c1: {n:'全班聆听', f:()=>{State.students.forEach(s=>{s.mood=Math.min(100,s.mood+15);s.stress=Math.max(0,s.stress-12);});this.log(`"${BASHU.mottos[Math.floor(Math.random()*BASHU.mottos.length)]}"——校训在心中回响。`,'[校歌]');}},
+                c2: {n:'继续上课', f:()=>{State.students.forEach(s=>{s.culture.chi+=1;});this.log('继续上课','[专注]');}}
+            },
+            {
+                c: () => true,
+                t: '周末有巴蜀中学和南开中学的友谊赛，你们竞赛班要出代表队！',
+                c1: {n:'组织参加', f:()=>{State.students.forEach(s=>{s.mood=Math.min(100,s.mood+20);s.stress+=5;});State.bashuEvents.push('友谊赛');this.log('友谊赛很激烈！巴蜀加油！','[友谊赛]');}},
+                c2: {n:'专心备考', f:()=>{State.students.forEach(s=>{s.oi.impl+=2;});this.log('选择了专心准备竞赛。','[专注]');}}
+            },
+            {
+                c: () => true,
+                t: '巴蜀中学"学科周"开始了，各科的竞赛题展览和讲座琳琅满目。',
+                c1: {n:'组织参观', f:()=>{State.students.forEach(s=>{s.mood=Math.min(100,s.mood+15);s.oi.impl+=2;});this.log('学科周太精彩了！学到了很多新思路。','[学科周]');}},
+                c2: {n:'自主训练', f:()=>{State.students.forEach(s=>{s.oi.impl+=3;});this.log('选择了自主训练。','[专注]');}}
+            },
+            {
+                c: () => true,
+                t: '竞赛班月考排名出来了，你们班整体进步了不少！',
+                c1: {n:'奖励休息', f:()=>{State.students.forEach(s=>{s.mood=Math.min(100,s.mood+20);s.stress=Math.max(0,s.stress-15);});this.log('奖励学生好好睡了一觉，心情大好！','[奖励]');}},
+                c2: {n:'继续努力', f:()=>{State.students.forEach(s=>{s.oi.impl+=2;s.stress+=5;});this.log('定了更高的目标。','[目标]');}}
+            },
+            {
+                c: () => true,
+                t: '学校组织去重庆科技馆参观，竞赛班优先报名。',
+                c1: {n:'组织报名', f:()=>{State.students.forEach(s=>{s.mood=Math.min(100,s.mood+15);s.stress=Math.max(0,s.stress-10);});State.bashuEvents.push('科技馆');this.log('科技馆太棒了！很多互动展品让人印象深刻。','[科技馆]');}},
+                c2: {n:'留在学校', f:()=>{State.students.forEach(s=>{s.oi.impl+=2;});this.log('留在学校训练。','[专注]');}}
+            },
+            {
+                c: () => true,
+                t: '巴蜀中学成人礼要到了，竞赛班也要参加彩排……',
+                c1: {n:'认真参加', f:()=>{State.students.forEach(s=>{s.mood=Math.min(100,s.mood+20);});State.bashuEvents.push('成人礼');this.log('成人礼很有仪式感，学生们感受到了成长的责任。','[成人礼]');}},
+                c2: {n:'请假训练', f:()=>{State.students.forEach(s=>{s.oi.impl+=1;});this.log('偷偷训练了。','[偷跑]');}}
+            }
+        ];
+        
+        let valid = events.filter(e=>e.c());
+        if(valid.length > 0) {
+            let ev = valid[Math.floor(Math.random()*valid.length)];
+            window.currEvent = ev;
+            UI.showChoice(ev);
+        }
+    },
+    
+    buyFac(id) {
+        let f = CONFIG.FACILITIES.find(x=>x.id===id);
+        let lv = State.fac[id];
+        if(lv >= 2) return;
+        let cost = f.p[lv+1];
+        if(State.money >= cost) {
+            State.money -= cost;
+            State.fac[id]++;
+            this.log(`升级了${f.n}`, `[资金-${cost}]`);
+            this.updateUI();
+        } else alert('资金不足！');
+    },
+    
+    heal(sIdx) {
+        if(State.money < 1000) return alert('资金不足！');
+        State.money -= 1000;
+        State.students[sIdx].sick = 0;
+        this.log(`请医生治好了${State.students[sIdx].name}`,'[康复]');
+        UI.closeModal('choice-modal');
+        this.updateUI();
+    },
+    
+    log(msg, eff='') {
+        let phase = this.getPhase();
+        let time = phase ? `${phase.y}年${phase.m}月` : '';
+        document.getElementById('log-area').innerHTML = 
+            `<div class="log-entry"><span style="color:#a0aec0">[${time}]</span> ${msg} ${eff?`<span class="log-eff">${eff}</span>`:''}</div>` +
+            document.getElementById('log-area').innerHTML;
+    },
+    
+    checkAchievements(){
+        ACHIEVEMENTS.forEach(a=>{
+            if(!State.achievements.includes(a.id)&&a.cond()){
+                State.achievements.push(a.id);
+                this.log(`🏆 解锁成就：${a.n} — ${a.d}`,'[成就]');
+            }
+        });
+    },
+
+    updateUI() {
+        let phase = this.getPhase();
+        if(!phase) return;
+        
+        document.getElementById('ui-time').innerText = `${phase.y}年 ${phase.m}月`;
+        document.getElementById('ui-phase').innerText = phase.name;
+        document.getElementById('ui-money').innerText = State.money;
+        document.getElementById('ui-ap').innerText = State.ap;
+        document.getElementById('ui-maxap').innerText = State.maxAp;
+        
+        let weathers = ['晴朗','多云','小雨','雾霾','雷阵雨'];
+        document.getElementById('ui-weather').innerText = weathers[Math.floor(Math.random()*weathers.length)];
+        
+        if(phase.grade === 12 && phase.name.includes('高三')) {
+            document.getElementById('sprint-tag').classList.remove('hidden');
+        }
+        
+        this.checkAchievements();
+        UI.renderStudents();
+        UI.renderFacilities();
+        UI.renderAchievements();
+    }
+};
+
+// ==================== UI ====================
+const UI = {
+    switchTab(id) {
+        document.querySelectorAll('.panel-content').forEach(e=>e.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(e=>e.classList.remove('active'));
+        document.getElementById(`panel-${id}`).classList.add('active');
+        event.target.classList.add('active');
+    },
+    
+    toggleMenu(id) {
+        let e = document.getElementById(id);
+        e.classList.toggle('active');
+    },
+    
+    hideMenus() {
+        document.querySelectorAll('.sub-menu').forEach(e=>e.classList.remove('active'));
+    },
+    
+    showChoice(ev) {
+        document.getElementById('choice-desc').innerText = ev.t;
+        document.getElementById('choice-btns').innerHTML = `
+            <button class="choice-btn" onclick="UI.handleChoice(1)">${ev.c1.n}</button>
+            <button class="choice-btn" onclick="UI.handleChoice(2)">${ev.c2.n}</button>
+        `;
+        document.getElementById('choice-modal').classList.remove('hidden');
+    },
+    
+    handleChoice(idx) {
+        document.getElementById('choice-modal').classList.add('hidden');
+        idx===1 ? window.currEvent.c1.f() : window.currEvent.c2.f();
+        Game.checkAchievements();
+        Game.updateUI();
+    },
+    
+    showDoctor() {
+        let sicks = State.students.map((s,i)=>({s,i})).filter(x=>x.s.sick>0);
+        if(sicks.length===0) return alert('没有学生生病！');
+        
+        document.getElementById('choice-desc').innerHTML = '<h4>选择要治疗的学生</h4>' + 
+            sicks.map(x=>`<div style="margin:8px 0;"><b>${x.s.name}</b> (病假${x.s.sick}月) 
+            <button style="padding:4px 12px;background:var(--success);color:white;border:none;border-radius:4px;cursor:pointer;" 
+            onclick="Game.heal(${x.i})">治疗 (¥1000)</button></div>`).join('');
+        document.getElementById('choice-btns').innerHTML = '<button class="choice-btn" onclick="document.getElementById(\'choice-modal\').classList.add(\'hidden\')">取消</button>';
+        document.getElementById('choice-modal').classList.remove('hidden');
+    },
+    
+    showExam(name, results, reward) {
+        document.getElementById('exam-title').innerText = name;
+        document.getElementById('exam-subtitle').innerText = reward;
+        let html = '<tr><th>排名</th><th>姓名</th><th>语文</th><th>数学</th><th>英语</th><th>物理</th><th>化学</th><th>总分</th></tr>';
+        results.forEach((r,i) => {
+            html += `<tr><td>${i+1}</td><td><b>${r.name}</b></td>
+                <td>${r.scores.chi}</td><td>${r.scores.mat}</td><td>${r.scores.eng}</td>
+                <td>${r.scores.phy}</td><td>${r.scores.che}</td>
+                <td style="color:var(--danger);font-weight:bold;">${r.total}</td></tr>`;
+        });
+        document.getElementById('exam-table').innerHTML = html;
+        document.getElementById('exam-modal').classList.remove('hidden');
+    },
+    
+    showOIResult(name, results, reward) {
+        document.getElementById('exam-title').innerText = name;
+        document.getElementById('exam-subtitle').innerText = reward;
+        let html = '<tr><th>排名</th><th>姓名</th><th>OI总分</th><th>评级</th></tr>';
+        results.forEach((r,i) => {
+            let grade = r.score >= 300 ? 'S' : r.score >= 250 ? 'A' : r.score >= 200 ? 'B' : r.score >= 150 ? 'C' : 'D';
+            html += `<tr><td>${i+1}</td><td><b>${r.name}</b></td>
+                <td style="color:var(--danger);font-weight:bold;">${r.score}</td>
+                <td style="color:var(--accent);font-weight:bold;">${grade}</td></tr>`;
+        });
+        document.getElementById('exam-table').innerHTML = html;
+        document.getElementById('exam-modal').classList.remove('hidden');
+    },
+    
+    showUpgrade(title, content) {
+        document.getElementById('upgrade-title').innerText = title;
+        document.getElementById('upgrade-content').innerHTML = content;
+        document.getElementById('upgrade-modal').classList.remove('hidden');
+    },
+    
+    closeUpgrade() {
+        document.getElementById('upgrade-modal').classList.add('hidden');
+    },
+    
+    closeExam() {
+        document.getElementById('exam-modal').classList.add('hidden');
+    },
+    
+    closeModal(id) {
+        document.getElementById(id).classList.add('hidden');
+    },
+    
+    getScoreColor(val, cap) {
+        let r = val/cap;
+        if(r>=0.9) return '#805ad5';
+        if(r>=0.8) return '#d53f8c';
+        if(r>=0.7) return '#dd6b20';
+        if(r>=0.6) return '#38a169';
+        if(r>=0.45) return '#3182ce';
+        return '#e2e8f0';
+    },
+    
+    getGrade(val, cap) {
+        let r = val/cap;
+        if(r>=0.95) return 'S+';
+        if(r>=0.9) return 'S';
+        if(r>=0.8) return 'A';
+        if(r>=0.7) return 'B';
+        if(r>=0.6) return 'C';
+        if(r>=0.45) return 'D';
+        return 'E';
+    },
+    
+    renderStudents() {
+        let phase = Game.getPhase();
+        let html = '';
+        
+        State.students.forEach(s => {
+            let phaseClass = s.phase === '高中' ? 'phase-senior' : 'phase-junior';
+            let sickClass = s.sick > 0 ? 'sick' : '';
+            let cultureTotal = Math.round(Object.values(s.culture).reduce((a,b)=>a+b,0));
+            let oiTotal = Math.round(Object.values(s.oi).reduce((a,b)=>a+b,0));
+            
+            html += `<div class="stu-card ${sickClass}">
+                <div class="stu-header">
+                    <span class="stu-name">${s.name} ${s.sick>0?'🤒':''}</span>
+                    <span class="stu-phase">${s.phase}</span>
+                </div>
+                <div class="tag-pool">
+                    ${s.talents.map(t=>`<span class="tag tag-${t.t==='pos'?'pos':'neg'}" title="${t.d}">${t.n}</span>`).join('')}
+                </div>
+                <div style="font-size:0.8em;color:#718096;margin-bottom:8px;">
+                    文化: ${cultureTotal} | OI: ${oiTotal}
+                </div>
+                <div class="sub-grid">
+                    ${CONFIG.SUBJECTS.culture.map(sub=>{
+                        let v = s.culture[sub.id];
+                        let c = this.getScoreColor(v, sub.cap);
+                        return `<div class="sub-box"><span class="sub-label">${sub.n}</span>
+                            <span class="sub-val" style="background:${c};color:${v/sub.cap>0.6?'white':'#2d3748'}">${this.getGrade(v,sub.cap)}</span></div>`;
+                    }).join('')}
+                    ${CONFIG.SUBJECTS.oi.map(sub=>{
+                        let v = s.oi[sub.id];
+                        let c = this.getScoreColor(v, sub.cap);
+                        return `<div class="sub-box"><span class="sub-label">${sub.n}</span>
+                            <span class="sub-val" style="background:${c};color:${v/sub.cap>0.6?'white':'#2d3748'}">${this.getGrade(v,sub.cap)}</span></div>`;
+                    }).join('')}
+                </div>
+                <div style="font-size:0.75em;display:flex;justify-content:space-between;font-weight:bold;">
+                    <span>压力值</span><span style="color:${s.stress>85?'var(--danger)':'#4a5568'}">${Math.round(s.stress)}%</span>
+                </div>
+                <div class="stress-bar"><div class="stress-fill" style="width:${Math.min(100,s.stress)}%;background:${s.stress>85?'var(--danger)':s.stress>60?'var(--warning)':'var(--success)'}"></div></div>
+            </div>`;
+        });
+        
+        document.getElementById('view-classroom').innerHTML = html;
+    },
+    
+    renderFacilities() {
+        document.getElementById('facilities').innerHTML = CONFIG.FACILITIES.map(f => {
+            let lv = State.fac[f.id];
+            let lvNames = f.lv.split('/');
+            return `<div class="facility-item">
+                <div>
+                    <h4>${f.n} <span style="color:var(--secondary);font-size:0.85em;">(${lvNames[lv]})</span></h4>
+                    <p>${f.d}</p>
+                </div>
+                <button style="padding:6px 14px;background:var(--primary);color:white;border:none;border-radius:6px;cursor:pointer;" 
+                    ${lv>=2?'disabled':''} onclick="Game.buyFac('${f.id}')">
+                    ${lv>=2?'已满级':'¥'+f.p[lv+1]}
+                </button>
+            </div>`;
+        }).join('');
+    },
+
+    renderAchievements() {
+        document.getElementById('ach-count').innerText = `${State.achievements.length}/${ACHIEVEMENTS.length}`;
+        if(State.achievements.length > 0){
+            let html = State.achievements.map(id => {
+                let a = ACHIEVEMENTS.find(x => x.id === id);
+                return `<div style="padding:3px 0;border-bottom:1px solid #f0f0f0"><b style="color:#d69e2e">🏆 ${a.n}</b> <span style="color:#999">${a.d}</span></div>`;
+            }).join('');
+            document.getElementById('achievements').innerHTML = html;
+        }
+    }
+};
+
+// ==================== 音乐播放器 ====================
+const BGM_TRACKS=[
+    {name:'悠闲',artist:'三Z-STUDIO / HOYO-MiX',file:'悠闲.mp3'},
+    {name:'校歌',artist:'群星',file:'群星 - 巴蜀中学校歌.mp3'},
+    {name:'日常',artist:'umut',file:'umut - 【V3】海原市 洄歌庭：874178073.mp3'},
+    {name:'愉悦',artist:'Matryoshka',file:'JLRS日落fm - 「神圣的游戏秘密场所」Sacred Play Secret Place (Matryoshka 百万级装备试听【Hi-Res】).mp3'}
+];
+let bgmAudio=new Audio();
+let bgmIdx=-1;
+let bgmPlaying=false;
+let audioErrorCount=0;
+let bgmMode='list';
+let bgmShuffleQueue=[];
+let bgmShufflePos=-1;
+
+function shuffleArray(arr){
+    let a=[...arr];
+    for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}
+    return a;
+}
+
+function genShuffleQueue(){
+    bgmShuffleQueue=shuffleArray(BGM_TRACKS.map((_,i)=>i));
+    bgmShufflePos=0;
+}
+
+function bgmNext(){
+    if(bgmMode==='single'){playBGM(bgmIdx);return}
+    if(bgmMode==='list'){playBGM((bgmIdx+1)%BGM_TRACKS.length);return}
+    if(bgmMode==='shuffle'){
+        bgmShufflePos++;
+        if(bgmShufflePos>=bgmShuffleQueue.length)genShuffleQueue();
+        playBGM(bgmShuffleQueue[bgmShufflePos]);
+    }
+}
+
+function setBgmMode(mode){
+    bgmMode=mode;
+    if(mode==='shuffle')genShuffleQueue();
+    document.querySelectorAll('.mode-btn').forEach(b=>{
+        b.style.background=b.dataset.mode===mode?'#fff5f5':'';
+        b.style.color=b.dataset.mode===mode?'#c53030':'#999';
+        b.style.borderColor=b.dataset.mode===mode?'#c53030':'#e2e8f0';
+    });
+}
+
+function initMusic(){
+    let list=document.getElementById('music-list');
+    if(!list)return;
+    list.innerHTML=BGM_TRACKS.map((t,i)=>`<div class="music-item" id="mi-${i}" onclick="playBGM(${i})" style="display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:6px;cursor:pointer;font-size:.78em;color:#555;transition:.15s;border:1px solid transparent"><span class="mi-icon" style="font-size:1em;width:20px;text-align:center">🎵</span><span class="mi-name" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.name}</span><span class="mi-dur" style="font-size:.7em;color:#bbb">${t.artist}</span></div>`).join('');
+    bgmAudio.volume=0.4;
+    bgmAudio.addEventListener('ended',()=>{if(bgmIdx>=0)bgmNext()});
+    bgmAudio.addEventListener('error',(e)=>{
+        audioErrorCount++;
+        console.error('音频加载失败:',bgmAudio.src,e);
+        let errMsg='';
+        if(bgmAudio.error){
+            switch(bgmAudio.error.code){
+                case 1:errMsg='音频加载被中止';break;
+                case 2:errMsg='网络错误，无法下载音频';break;
+                case 3:errMsg='音频解码失败（格式不支持）';break;
+                case 4:errMsg='音频格式不支持或文件不存在';break;
+                default:errMsg='未知音频错误';
+            }
+        }
+        showAudioError(errMsg||'音频加载失败，请检查文件是否存在');
+    });
+    checkAudioFiles();
+}
+
+function checkAudioFiles(){
+    console.log('[音频检测] 开始检测音频文件可访问性...');
+    BGM_TRACKS.forEach((track,i)=>{
+        let testAudio=new Audio();
+        testAudio.src=track.file;
+        testAudio.addEventListener('canplaythrough',()=>{
+            console.log('[音频检测] ✅ '+track.name+' ('+track.file+') 可以正常播放');
+        });
+        testAudio.addEventListener('error',()=>{
+            let errCode=testAudio.error?testAudio.error.code:'?';
+            console.error('[音频检测] ❌ '+track.name+' ('+track.file+') 加载失败，错误码:'+errCode);
+            fetch(track.file,{method:'HEAD'}).then(r=>{
+                console.log('[音频检测] 📡 '+track.name+' HTTP状态:'+r.status+' '+r.statusText);
+            }).catch(e=>{
+                console.error('[音频检测] 📡 '+track.name+' fetch失败:',e.message);
+            });
+        });
+    });
+}
+
+function testAudioFiles(){
+    let resultDiv=document.getElementById('audio-test-result');
+    if(!resultDiv)return;
+    resultDiv.innerHTML='<div style="color:#3182ce">🔍 检测中...</div>';
+    let results=[];
+    let checked=0;
+    BGM_TRACKS.forEach((track,i)=>{
+        let testAudio=new Audio();
+        testAudio.src=track.file;
+        let done=false;
+        testAudio.addEventListener('canplaythrough',()=>{
+            if(done)return;done=true;
+            results[i]={ok:true,name:track.name,msg:'✅ 可播放'};
+            checked++;if(checked===BGM_TRACKS.length)showAudioTestResults(results);
+        });
+        testAudio.addEventListener('error',()=>{
+            if(done)return;done=true;
+            let errCode=testAudio.error?testAudio.error.code:'?';
+            let errMsg='❌ 错误码'+errCode;
+            if(errCode===2)errMsg='❌ 网络错误(404/403)';
+            if(errCode===3)errMsg='❌ 解码失败(格式不支持)';
+            if(errCode===4)errMsg='❌ 格式不支持或文件不存在';
+            results[i]={ok:false,name:track.name,msg:errMsg,file:track.file};
+            checked++;if(checked===BGM_TRACKS.length)showAudioTestResults(results);
+        });
+        setTimeout(()=>{
+            if(!done){done=true;
+                results[i]={ok:false,name:track.name,msg:'⏱️ 检测超时',file:track.file};
+                checked++;if(checked===BGM_TRACKS.length)showAudioTestResults(results);
+            }
+        },5000);
+    });
+}
+
+function showAudioTestResults(results){
+    let resultDiv=document.getElementById('audio-test-result');
+    if(!resultDiv)return;
+    let html='';
+    results.forEach(r=>{
+        html+='<div style="padding:2px 0">'+r.name+': '+r.msg+'</div>';
+    });
+    let allOk=results.every(r=>r.ok);
+    if(allOk){
+        html+='<div style="color:#38a169;margin-top:4px">🎉 所有音频文件正常！</div>';
+    }else{
+        html+='<div style="color:#e53e3e;margin-top:4px">⚠️ 部分文件无法播放</div>';
+        html+='<div style="color:#999;margin-top:2px">请按F12查看详细错误</div>';
+    }
+    resultDiv.innerHTML=html;
+}
+
+function showAudioError(msg){
+    console.warn('[音乐错误]',msg);
+}
+
+function playBGM(idx){
+    let btn=document.getElementById('music-toggle');
+    if(bgmIdx===idx&&bgmPlaying){
+        bgmAudio.pause();bgmPlaying=false;
+        btn.classList.remove('playing');btn.innerText='🎵 音乐';
+        document.getElementById('mi-'+idx).classList.remove('active');
+        document.querySelectorAll('.music-item .mi-icon').forEach(el=>el.innerText='🎵');
+        return;
+    }
+    bgmIdx=idx;
+    let track=BGM_TRACKS[idx];
+    bgmAudio.src=track.file;
+    bgmAudio.play().catch((err)=>{
+        console.error('播放失败:',err);
+        showAudioError('无法播放「'+track.name+'」，可能是浏览器限制了自动播放或文件路径错误');
+        bgmPlaying=false;
+        btn.classList.remove('playing');btn.innerText='🎵 音乐';
+    });
+    bgmPlaying=true;
+    btn.classList.add('playing');btn.innerText='⏸ 音乐';
+    document.querySelectorAll('.music-item').forEach((el,i)=>{
+        el.classList.toggle('active',i===idx);
+        el.style.background=i===idx?'#fff5f5':'';
+        el.style.borderColor=i===idx?'#c53030':'transparent';
+        el.style.color=i===idx?'#c53030':'#555';
+        el.querySelector('.mi-icon').innerText=i===idx?'⏸':'🎵';
+    });
+}
+
+function setMusicVol(v){bgmAudio.volume=v/100}
+
+function toggleMusicPanel(e){
+    if(e)e.stopPropagation();
+    let p=document.getElementById('music-panel');
+    p.style.display=p.style.display==='block'?'none':'block';
+}
+
+document.addEventListener('click',e=>{
+    let p=document.getElementById('music-panel');
+    let b=document.getElementById('music-toggle');
+    if(p&&p.style.display==='block'&&!p.contains(e.target)&&!b.contains(e.target)){
+        p.style.display='none';
+    }
+});
+
+// 页面加载完成后初始化音乐
+window.addEventListener('load',initMusic);
+</script>
+
+</body>
+</html>
